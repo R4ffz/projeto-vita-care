@@ -1,0 +1,42 @@
+# Infraestrutura local do VitaCare IoT.
+# Sobe apenas os serviços de infraestrutura (PostgreSQL e Mosquitto).
+# Backend, frontend e simulador rodam fora do compose nesta fase do projeto.
+
+services:
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: vitacare-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: vitacare
+      POSTGRES_USER: vitacare
+      POSTGRES_PASSWORD: vitacare
+    ports:
+      - "5432:5432"
+    volumes:
+      - vitacare-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vitacare -d vitacare"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    container_name: vitacare-mosquitto
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+    configs:
+      - source: mosquitto-conf
+        target: /mosquitto/config/mosquitto.conf
+
+configs:
+  mosquitto-conf:
+    content: |
+      listener 1883
+      allow_anonymous true
+
+volumes:
+  vitacare-postgres-data:

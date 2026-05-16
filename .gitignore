@@ -1,0 +1,132 @@
+# ============================================================================
+# Sistema operacional
+# ============================================================================
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+
+# ============================================================================
+# IDEs e editores
+# ============================================================================
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Eclipse / STS
+.classpath
+.project
+.settings/
+.springBeans
+.factorypath
+bin/
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# NetBeans
+nbproject/private/
+nbbuild/
+nbdist/
+.nb-gradle/
+
+# ============================================================================
+# Java / Spring Boot / Maven (backend/)
+# ============================================================================
+
+target/
+build/
+*.class
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+hs_err_pid*
+replay_pid*
+
+# Maven Wrapper — manter o jar do wrapper versionado
+!.mvn/wrapper/maven-wrapper.jar
+
+# Spring Boot
+HELP.md
+
+# Configurações locais sensíveis
+application-local.yml
+application-local.properties
+application-secret*.yml
+application-secret*.properties
+
+# ============================================================================
+# Node.js / React / Vite (frontend/, simulator/)
+# ============================================================================
+
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+.npm/
+.yarn/
+
+# Build outputs
+dist/
+dist-ssr/
+*.local
+
+# Coverage
+coverage/
+.nyc_output/
+
+# TypeScript
+*.tsbuildinfo
+
+# ============================================================================
+# Variáveis de ambiente e segredos
+# ============================================================================
+
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# ============================================================================
+# Docker
+# ============================================================================
+
+docker-compose.override.yml
+.docker/
+
+# ============================================================================
+# Logs e arquivos temporários
+# ============================================================================
+
+logs/
+*.log
+*.tmp
+*.bak
+.cache/
