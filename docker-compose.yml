@@ -11,7 +11,7 @@ services:
     environment:
       POSTGRES_DB: vitacare
       POSTGRES_USER: vitacare
-      POSTGRES_PASSWORD: vitacare
+      POSTGRES_PASSWORD: vitacare_dev
     ports:
       - "5432:5432"
     volumes:
@@ -28,15 +28,8 @@ services:
     restart: unless-stopped
     ports:
       - "1883:1883"
-    configs:
-      - source: mosquitto-conf
-        target: /mosquitto/config/mosquitto.conf
-
-configs:
-  mosquitto-conf:
-    content: |
-      listener 1883
-      allow_anonymous true
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
 
 volumes:
   vitacare-postgres-data:

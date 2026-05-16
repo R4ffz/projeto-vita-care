@@ -70,13 +70,20 @@ Quatro camadas IoT:
 | `simulator/` | Simulador Node.js que publica sinais vitais e eventos no broker MQTT e escuta tópicos de comando vindos do backend. |
 | `docs/` | Documentação técnica complementar — diagramas, contratos MQTT, decisões de arquitetura, roteiro de apresentação. |
 | `docker-compose.yml` | Orquestração local dos serviços de infraestrutura (PostgreSQL + Mosquitto). |
+| `mosquitto.conf` | Configuração do broker Mosquitto para desenvolvimento local. |
 | `.gitignore` | Padrões de arquivos ignorados pelo Git (Java, Node, React, Docker, IDEs, SO). |
 
 ---
 
 ## Como rodar
 
-A documentação de execução de cada serviço será preenchida nas próximas fases. Por enquanto, a infraestrutura local pode ser iniciada com:
+Esta fase do projeto sobe apenas a **infraestrutura local** (PostgreSQL + Mosquitto). Backend, frontend e simulador são adicionados nas próximas fases.
+
+### Pré-requisitos
+
+- Docker Desktop (Windows / macOS) ou Docker Engine + Docker Compose v2.20+ (Linux).
+
+### Subir os serviços
 
 ```bash
 docker compose up -d
@@ -84,8 +91,64 @@ docker compose up -d
 
 Isso sobe:
 
-- PostgreSQL em `localhost:5432` (database `vitacare`, usuário `vitacare`, senha `vitacare`).
-- Mosquitto em `localhost:1883` (acesso anônimo, apenas para desenvolvimento local).
+- **PostgreSQL** em `localhost:5432` — database `vitacare`, usuário `vitacare`, senha `vitacare_dev`.
+- **Mosquitto** em `localhost:1883` — acesso anônimo, apenas para desenvolvimento local.
+
+Verificar status e logs:
+
+```bash
+docker compose ps                # ambos devem aparecer "running" (Postgres "healthy")
+docker compose logs -f           # acompanhar logs (Ctrl+C para sair)
+```
+
+### Testar o PostgreSQL
+
+```bash
+docker exec -it vitacare-postgres psql -U vitacare -d vitacare -c "SELECT version();"
+```
+
+Deve retornar a versão do PostgreSQL 16.
+
+### Testar o Mosquitto
+
+Em **um terminal**, abra um subscriber escutando um tópico de teste:
+
+```bash
+docker exec -it vitacare-mosquitto mosquitto_sub -h localhost -t "vitacare/teste" -v
+```
+
+(O terminal fica bloqueado aguardando mensagens.)
+
+Em **outro terminal**, publique uma mensagem:
+
+```bash
+docker exec -it vitacare-mosquitto mosquitto_pub -h localhost -t "vitacare/teste" -m "ola VitaCare"
+```
+
+No primeiro terminal deve aparecer:
+
+```
+vitacare/teste ola VitaCare
+```
+
+Teste opcional com a estrutura real de tópicos que o projeto vai usar:
+
+```bash
+# Em um terminal: escuta sinais de qualquer paciente
+docker exec -it vitacare-mosquitto mosquitto_sub -h localhost -t "pacientes/+/sinais" -v
+
+# Em outro terminal: publica um sinal vital de exemplo
+docker exec -it vitacare-mosquitto mosquitto_pub -h localhost -t "pacientes/1/sinais" -m '{"bpm":78,"spo2":97,"temp":36.8}'
+```
+
+> Se você tiver os clientes Mosquitto instalados localmente (`mosquitto-clients` no Linux, `mosquitto` via Homebrew no macOS, instalador oficial no Windows), pode rodar os mesmos comandos removendo o prefixo `docker exec -it vitacare-mosquitto`.
+
+### Parar os serviços
+
+```bash
+docker compose down              # para os containers, mantém o volume do Postgres
+docker compose down -v           # para tudo e apaga os dados persistidos do Postgres
+```
 
 ---
 
