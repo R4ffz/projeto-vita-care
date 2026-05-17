@@ -29,3 +29,11 @@ logging:
   level:
     com.vitacare: INFO
     org.springframework.web: INFO
+
+mqtt:
+  broker-url: tcp://localhost:1883
+  client-id: vitacare-backend
+  qos: 1
+  clean-session: true
+  connection-timeout-seconds: 10
+  keep-alive-seconds: 30
