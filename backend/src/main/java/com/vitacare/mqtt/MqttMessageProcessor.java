@@ -7,9 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.vitacare.alerta.Alerta;
-import com.vitacare.alerta.AlertaRepository;
-import com.vitacare.alerta.Severidade;
+import com.vitacare.alerta.AvaliadorAlertas;
 import com.vitacare.leitura.Leitura;
 import com.vitacare.leitura.LeituraRepository;
 import com.vitacare.mqtt.payload.QuedaPayload;
@@ -25,12 +23,10 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class MqttMessageProcessor {
 
-    private static final double INTENSIDADE_CRITICA = 2.5;
-
     private final ObjectMapper objectMapper;
     private final PacienteRepository pacienteRepository;
     private final LeituraRepository leituraRepository;
-    private final AlertaRepository alertaRepository;
+    private final AvaliadorAlertas avaliadorAlertas;
 
     @Transactional
     public void processarSinal(Long pacienteId, String payloadJson) {
@@ -48,6 +44,8 @@ public class MqttMessageProcessor {
 
             log.debug("Leitura salva: paciente={} bpm={} spo2={} temp={}",
                     pacienteId, p.bpm(), p.spo2(), p.temp());
+
+            avaliadorAlertas.avaliarLeitura(pacienteId, leitura);
         } catch (Exception e) {
             log.error("Erro processando sinal paciente={} payload={} : {}",
                     pacienteId, payloadJson, e.getMessage());
@@ -63,20 +61,8 @@ public class MqttMessageProcessor {
                 log.debug("Queda 'não detectada' ignorada (paciente {})", pacienteId);
                 return;
             }
-
-            Severidade severidade = decideSeveridade(p.intensidade());
-
-            Alerta alerta = new Alerta();
-            alerta.setPacienteId(pacienteId);
-            alerta.setTipo("QUEDA");
-            alerta.setValorMedido(p.intensidade() != null ? BigDecimal.valueOf(p.intensidade()) : null);
-            alerta.setSeveridade(severidade);
-            alerta.setAtendido(false);
-            alerta.setTimestamp(p.ts() != null ? p.ts() : Instant.now());
-            alertaRepository.save(alerta);
-
-            log.warn("Alerta de QUEDA gravado: paciente={} intensidade={} severidade={}",
-                    pacienteId, p.intensidade(), severidade);
+            Instant ts = p.ts() != null ? p.ts() : Instant.now();
+            avaliadorAlertas.registrarQueda(pacienteId, p.intensidade(), ts);
         } catch (Exception e) {
             log.error("Erro processando queda paciente={} payload={} : {}",
                     pacienteId, payloadJson, e.getMessage());
@@ -100,10 +86,5 @@ public class MqttMessageProcessor {
             log.warn("Mensagem ignorada: paciente {} não existe", pacienteId);
         }
         return existe;
-    }
-
-    private Severidade decideSeveridade(Double intensidade) {
-        if (intensidade == null) return Severidade.ALTA;
-        return intensidade >= INTENSIDADE_CRITICA ? Severidade.CRITICA : Severidade.ALTA;
     }
 }

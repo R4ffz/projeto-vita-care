@@ -29,8 +29,9 @@ public class Alerta {
     @Column(name = "paciente_id", nullable = false)
     private Long pacienteId;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
-    private String tipo;
+    private TipoAlerta tipo;
 
     @Column(name = "valor_medido", precision = 6, scale = 2)
     private BigDecimal valorMedido;
