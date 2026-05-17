@@ -1,0 +1,67 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body, #root {
+    height: 100%;
+  }
+  body {
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+  /* Scrollbar discreto, alinhado com a paleta */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: theme('colors.vita.border');
+    border-radius: 8px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: theme('colors.vita.muted');
+  }
+}
+
+@layer components {
+  .vita-card {
+    @apply bg-vita-surface border border-vita-border rounded-xl shadow-card;
+  }
+  .vita-btn-primary {
+    @apply inline-flex items-center justify-center gap-2
+           px-4 py-2 rounded-lg text-sm font-medium
+           bg-vita-primary text-white
+           hover:bg-vita-primary-strong
+           focus:outline-none focus:ring-2 focus:ring-vita-primary/30
+           disabled:opacity-50 disabled:pointer-events-none
+           transition;
+  }
+  .vita-btn-secondary {
+    @apply inline-flex items-center justify-center gap-2
+           px-4 py-2 rounded-lg text-sm font-medium
+           bg-white text-vita-text border border-vita-border
+           hover:bg-vita-bg
+           focus:outline-none focus:ring-2 focus:ring-vita-primary/20
+           disabled:opacity-50 disabled:pointer-events-none
+           transition;
+  }
+  .vita-btn-ghost {
+    @apply inline-flex items-center justify-center gap-2
+           px-3 py-2 rounded-lg text-sm font-medium
+           text-vita-muted hover:text-vita-text hover:bg-vita-bg
+           transition;
+  }
+  .vita-input {
+    @apply w-full rounded-lg border border-vita-border bg-white
+           px-3 py-2 text-sm text-vita-text
+           placeholder:text-vita-muted
+           focus:outline-none focus:ring-2 focus:ring-vita-primary/30 focus:border-vita-primary
+           transition;
+  }
+  .vita-label {
+    @apply block text-xs font-medium text-vita-muted uppercase tracking-wide mb-1.5;
+  }
+  .vita-section-title {
+    @apply text-sm font-semibold text-vita-muted uppercase tracking-wider;
+  }
+}
