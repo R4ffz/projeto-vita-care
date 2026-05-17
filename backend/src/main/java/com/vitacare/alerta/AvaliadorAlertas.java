@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.vitacare.leitura.Leitura;
 import com.vitacare.limite.LimiteConfig;
 import com.vitacare.limite.LimiteConfigRepository;
+import com.vitacare.realtime.RealtimePublisher;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +37,7 @@ public class AvaliadorAlertas {
 
     private final LimiteConfigRepository limiteConfigRepository;
     private final AlertaRepository alertaRepository;
+    private final RealtimePublisher realtimePublisher;
 
     @Transactional
     public void avaliarLeitura(Long pacienteId, Leitura leitura) {
@@ -92,6 +94,7 @@ public class AvaliadorAlertas {
         alertaRepository.save(alerta);
         log.warn("Alerta gerado: paciente={} tipo={} valor={} severidade={}",
                 pacienteId, tipo, valor, severidade);
+        realtimePublisher.publicarAlerta(alerta);
     }
 
     private boolean recente(Long pacienteId, TipoAlerta tipo, Instant agora) {

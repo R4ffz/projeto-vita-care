@@ -14,6 +14,7 @@ import com.vitacare.mqtt.payload.QuedaPayload;
 import com.vitacare.mqtt.payload.SinalPayload;
 import com.vitacare.mqtt.payload.StatusPayload;
 import com.vitacare.paciente.PacienteRepository;
+import com.vitacare.realtime.RealtimePublisher;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +28,7 @@ public class MqttMessageProcessor {
     private final PacienteRepository pacienteRepository;
     private final LeituraRepository leituraRepository;
     private final AvaliadorAlertas avaliadorAlertas;
+    private final RealtimePublisher realtimePublisher;
 
     @Transactional
     public void processarSinal(Long pacienteId, String payloadJson) {
@@ -44,6 +46,8 @@ public class MqttMessageProcessor {
 
             log.debug("Leitura salva: paciente={} bpm={} spo2={} temp={}",
                     pacienteId, p.bpm(), p.spo2(), p.temp());
+
+            realtimePublisher.publicarLeitura(leitura);
 
             avaliadorAlertas.avaliarLeitura(pacienteId, leitura);
         } catch (Exception e) {
