@@ -70,8 +70,16 @@ export interface ApiError {
   fields?: Record<string, string>;
 }
 
+export type EstadoSimulado = 'normal' | 'taquicardia' | 'baixa_saturacao' | 'febre';
+export type PerfilKey = 'jovem_saudavel' | 'hipertenso' | 'idoso_fragilizado';
+
 export interface PerfilSimulado {
   id: number;
-  perfil: 'jovem_saudavel' | 'hipertenso' | 'idoso_fragilizado';
-  estado: 'normal' | 'taquicardia' | 'baixa_saturacao' | 'febre';
+  perfil: PerfilKey;
+  estado: EstadoSimulado;
+  publicando: boolean;
+}
+
+export interface StatusSimulador {
+  pacientes: PerfilSimulado[];
 }

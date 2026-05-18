@@ -91,6 +91,8 @@ taquicardia 2         # paciente 2 passa a publicar BPM ~140
 baixa-saturacao 3     # paciente 3 passa a publicar SpO2 ~88
 febre 1               # paciente 1 passa a publicar temp ~38.7
 reset 2               # paciente 2 volta para normal
+pausar 3              # para de publicar sinais do paciente 3
+retomar 3             # retoma a publicação de sinais
 status                # lista pacientes e estados atuais
 help
 exit                  # ou quit, ou Ctrl+C
@@ -98,7 +100,9 @@ exit                  # ou quit, ou Ctrl+C
 
 ## Eventos manuais — HTTP
 
-Os mesmos comandos via REST local na porta 4000 (para o painel do simulador no Prompt 15):
+Mesmas ações via REST local na porta 4000. O painel do simulador no frontend
+(Prompt 15) consome esses endpoints. CORS está aberto (`*`) para permitir
+chamadas do Vite em `localhost:5173`.
 
 ```bash
 curl -X POST http://localhost:4000/sim/1/queda \
@@ -107,8 +111,28 @@ curl -X POST http://localhost:4000/sim/2/taquicardia
 curl -X POST http://localhost:4000/sim/3/baixa-saturacao
 curl -X POST http://localhost:4000/sim/1/febre
 curl -X POST http://localhost:4000/sim/2/reset
+curl -X POST http://localhost:4000/sim/3/pausar
+curl -X POST http://localhost:4000/sim/3/retomar
 curl       http://localhost:4000/sim/status
 ```
+
+Resposta de `GET /sim/status`:
+
+```json
+{
+  "pacientes": [
+    { "id": 1, "perfil": "jovem_saudavel",    "estado": "normal",      "publicando": true  },
+    { "id": 2, "perfil": "hipertenso",        "estado": "taquicardia", "publicando": true  },
+    { "id": 3, "perfil": "idoso_fragilizado", "estado": "normal",      "publicando": false }
+  ]
+}
+```
+
+**Observação sobre pausar/retomar:** afeta apenas a publicação de **sinais**.
+Status (`pacientes/{id}/status` com `online: true`) continua sendo enviado a
+cada 30 s — a metáfora é que o "dispositivo" segue ligado, só a coleta foi
+pausada. Quedas são eventos pontuais disparados pelo painel/CLI, não sofrem
+efeito do pause.
 
 ---
 

@@ -8,6 +8,8 @@ Comandos:
   baixa-saturacao <id>            fixa o paciente em estado de baixa saturacao
   febre <id>                      fixa o paciente em estado de febre
   reset <id>                      volta o paciente ao estado normal
+  pausar <id>                     para de publicar sinais para esse paciente
+  retomar <id>                    retoma a publicacao de sinais
   help                            exibe esta ajuda
   exit | quit                     encerra o simulador (Ctrl+C tambem funciona)
 `.trim();
@@ -64,7 +66,8 @@ function executar(cmd, partes, pacientes, onQueda, rl) {
   }
   if (cmd === 'status') {
     for (const p of pacientes) {
-      console.log(`  ${p.id} [${p.perfilKey}] -> ${p.estado}`);
+      const flag = p.publicando ? '' : ' (PAUSADO)';
+      console.log(`  ${p.id} [${p.perfilKey}] -> ${p.estado}${flag}`);
     }
     return;
   }
@@ -81,6 +84,20 @@ function executar(cmd, partes, pacientes, onQueda, rl) {
     if (!p) { console.log('  paciente nao simulado'); return; }
     p.reset();
     console.log(`  paciente ${p.id} resetado para normal`);
+    return;
+  }
+  if (cmd === 'pausar') {
+    const p = pacientePor(pacientes, partes[1]);
+    if (!p) { console.log('  paciente nao simulado'); return; }
+    p.pausar();
+    console.log(`  paciente ${p.id} pausado (nao publica sinais)`);
+    return;
+  }
+  if (cmd === 'retomar') {
+    const p = pacientePor(pacientes, partes[1]);
+    if (!p) { console.log('  paciente nao simulado'); return; }
+    p.retomar();
+    console.log(`  paciente ${p.id} retomado`);
     return;
   }
   if (ESTADOS_POR_COMANDO[cmd]) {

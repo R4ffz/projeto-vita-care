@@ -34,11 +34,13 @@ client.on('connect', () => {
 
   if (!loopSinais) {
     loopSinais = setInterval(() => {
-      for (const p of pacientes) publicarSinal(p);
+      for (const p of pacientes) if (p.publicando) publicarSinal(p);
     }, cfg.sinaisIntervalMs);
   }
   if (!loopStatus) {
     loopStatus = setInterval(() => {
+      // Status (online) continua sendo publicado mesmo com sinais pausados —
+      // o "dispositivo" segue ligado, só a coleta de sinais foi pausada.
       for (const p of pacientes) publicarStatus(p, true);
     }, cfg.statusIntervalMs);
   }

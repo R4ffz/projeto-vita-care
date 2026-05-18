@@ -6,3 +6,4 @@ export * as pacientesService from './pacientes';
 export * as leiturasService  from './leituras';
 export * as alertasService   from './alertas';
 export * as limitesService   from './limites';
+export * as simuladorService from './simulador';

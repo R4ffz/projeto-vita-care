@@ -11,6 +11,7 @@ export class PacienteVirtual {
     this.perfilKey = perfilKey;
     this.perfil = PERFIS[perfilKey];
     this.estado = 'normal';
+    this.publicando = true;   // se false, o loop de sinais pula este paciente
   }
 
   setEstado(estado) {
@@ -23,6 +24,9 @@ export class PacienteVirtual {
   reset() {
     this.estado = 'normal';
   }
+
+  pausar()  { this.publicando = false; }
+  retomar() { this.publicando = true;  }
 
   gerarSinal() {
     return {
