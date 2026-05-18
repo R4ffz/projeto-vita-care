@@ -1,0 +1,20 @@
+# Perfil 'docker': sobrescreve apenas os hosts que dependem da rede do compose.
+# Ativado por SPRING_PROFILES_ACTIVE=docker (já definido no Dockerfile).
+# Cada propriedade pode ser sobrescrita por variável de ambiente — defaults
+# abaixo cobrem o caso "subiu o docker-compose.yml padrão".
+
+spring:
+  datasource:
+    url:      ${SPRING_DATASOURCE_URL:jdbc:postgresql://postgres:5432/vitacare}
+    username: ${SPRING_DATASOURCE_USERNAME:vitacare}
+    password: ${SPRING_DATASOURCE_PASSWORD:vitacare_dev}
+
+mqtt:
+  broker-url: ${MQTT_BROKER_URL:tcp://mosquitto:1883}
+
+vitacare:
+  security:
+    jwt:
+      # Override em produção via env var. Default igual ao application.yml dev.
+      secret: ${VITACARE_SECURITY_JWT_SECRET:vitacare-iot-dev-secret-troque-em-producao-min-32-bytes-please}
+      expiration-hours: ${VITACARE_SECURITY_JWT_EXPIRATION_HOURS:8}

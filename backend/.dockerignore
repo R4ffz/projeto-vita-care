@@ -1,0 +1,37 @@
+# Build artifacts
+target/
+build/
+*.jar
+*.war
+
+# IDEs
+.idea/
+.vscode/
+*.iml
+.classpath
+.project
+.settings/
+
+# Logs / dumps
+*.log
+hs_err_pid*
+replay_pid*
+
+# Maven local config
+.mvn/wrapper/maven-wrapper.properties.local
+
+# Configurações sensíveis locais — nunca entrar na imagem
+application-local.yml
+application-secret*.yml
+.env
+.env.*
+
+# Git / docs (não usados no build)
+.git/
+.gitignore
+README.md
+HELP.md
+
+# Sistema
+.DS_Store
+Thumbs.db

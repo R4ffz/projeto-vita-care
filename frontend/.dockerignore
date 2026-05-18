@@ -1,0 +1,32 @@
+node_modules/
+dist/
+dist-ssr/
+
+# Caches
+.cache/
+.npm/
+.vite/
+*.tsbuildinfo
+
+# IDEs
+.idea/
+.vscode/
+*.code-workspace
+
+# Configurações locais — nunca entrar na imagem
+.env
+.env.local
+.env.*.local
+
+# Git / docs
+.git/
+.gitignore
+README.md
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Coverage / testes
+coverage/
+.nyc_output/

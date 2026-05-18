@@ -152,5 +152,87 @@ docker compose down -v           # para tudo e apaga os dados persistidos do Pos
 
 ---
 
+## Subir a stack completa via Docker (backend + frontend)
 
+A partir desta fase, o `docker-compose.yml` também sobe **backend Spring Boot** e
+**frontend React** dockerizados. O simulador Node.js continua rodando **fora** do
+compose (execute `cd simulator && npm start` em outro terminal).
+
+### Pré-requisitos
+
+- Docker Desktop (Windows / macOS) ou Docker Engine + Compose v2.20+ (Linux).
+- Node.js 20+ apenas se for rodar o simulador local.
+
+### Subir tudo do zero
+
+```bash
+docker compose up --build -d     # builda imagens e sobe os 4 serviços
+docker compose ps                # backend e frontend devem aparecer 'healthy'
+docker compose logs -f backend   # acompanhar logs do Spring
+```
+
+A primeira build demora ~2–4 min (download do Maven + npm). Builds subsequentes
+reaproveitam o cache (segundos).
+
+### Limpar e recomeçar
+
+```bash
+docker compose down              # para tudo, mantém volume do Postgres
+docker compose down -v           # para tudo e apaga o banco
+docker compose build --no-cache  # força rebuild sem cache
+```
+
+### Acessos
+
+| Serviço     | URL / porta                          | Credencial / observação |
+|---|---|---|
+| Frontend    | http://localhost:3000                | login JWT (ver abaixo) |
+| Backend REST| http://localhost:8080/api            | exposto direto para curl/Postman |
+| `/api/health` | http://localhost:8080/api/health   | público (sem token) |
+| Backend via proxy | http://localhost:3000/api/…    | nginx do frontend encaminha |
+| WebSocket   | ws://localhost:3000/ws (via proxy) ou ws://localhost:8080/ws | STOMP nativo |
+| PostgreSQL  | localhost:5432, db `vitacare`        | user `vitacare` / pwd `vitacare_dev` |
+| Mosquitto   | localhost:1883                       | anônimo (dev) |
+| Simulator (host) | http://localhost:4000/sim       | rodar `cd simulator && npm start` |
+
+> **Swagger não está habilitado** neste protótipo. Endpoints REST estão
+> documentados no README do backend.
+
+### Credenciais de login (seed)
+
+| E-mail | Senha | Perfil |
+|---|---|---|
+| `admin@vitacare.local`      | `admin123`        | ADMIN |
+| `enfermagem@vitacare.local` | `profissional123` | PROFISSIONAL |
+| `cuidador@vitacare.local`   | `cuidador123`     | CUIDADOR |
+
+### Variáveis de ambiente opcionais
+
+Copie `.env.example` para `.env` na raiz para sobrescrever senha do Postgres ou
+o secret do JWT. Defaults adequados para dev já vêm setados.
+
+### Arquitetura Docker
+
+```
+  navegador  ──── http://localhost:3000 ────▶  vitacare-frontend (nginx)
+                                                   │
+                                                   │ /api/* /ws (reverse proxy)
+                                                   ▼
+                                              vitacare-backend (Spring Boot)
+                                                   │
+                              ┌────────────────────┼──────────────────────┐
+                              ▼                    ▼                      ▼
+                         postgres:5432        mosquitto:1883        (futuro)
+                       (vitacare-postgres) (vitacare-mosquitto)
+
+  navegador  ──── http://localhost:4000 ────▶  simulator (Node, no host)
+                                                   │
+                                                   │ MQTT publish
+                                                   ▼
+                                          localhost:1883 ──▶ vitacare-mosquitto
+                                          (port forwarding)
+```
+
+Rede `vitacare` (bridge) liga os 4 containers. O simulador permanece no host
+para facilitar controle durante a demonstração (CLI no terminal).
 
