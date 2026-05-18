@@ -37,3 +37,12 @@ mqtt:
   clean-session: true
   connection-timeout-seconds: 10
   keep-alive-seconds: 30
+
+# Configuração JWT. O segredo precisa ter >= 32 bytes para HS256.
+# Em produção, substituir por variável de ambiente / secret manager.
+vitacare:
+  security:
+    jwt:
+      secret: "vitacare-iot-dev-secret-troque-em-producao-min-32-bytes-please"
+      expiration-hours: 8
+      issuer: vitacare-iot

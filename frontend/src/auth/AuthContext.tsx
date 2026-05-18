@@ -1,53 +1,83 @@
-// Auth fake/local para esta etapa. Persiste no localStorage.
-// O Prompt 16 vai decidir entre manter login fake ou trocar por JWT real.
+// Autenticação real via Spring Security + JWT (Prompt 16).
+// O token e os dados do usuário ficam no localStorage; o interceptor do Axios
+// (em src/lib/api.ts) injeta Authorization automaticamente e dispara o evento
+// `vitacare:unauthorized` quando o backend responde 401 em rota protegida.
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import {
+  createContext, useCallback, useContext, useEffect, useState,
+  type ReactNode,
+} from 'react';
+import { useNavigate } from 'react-router-dom';
+import { AUTH_STORAGE_KEY, ServiceError, UNAUTHORIZED_EVENT } from '@/lib/api';
+import { authService } from '@/services';
+import type { Perfil, UsuarioLogado } from '@/types';
 
-export type Perfil = 'cuidador' | 'profissional' | 'admin';
-
-export interface Usuario {
-  email: string;
-  nome: string;
-  perfil: Perfil;
+interface PayloadPersistido {
+  token: string;
+  usuario: UsuarioLogado;
 }
 
 interface AuthContextValue {
-  usuario: Usuario | null;
-  login: (email: string, _senha: string) => void;
+  usuario: UsuarioLogado | null;
+  token: string | null;
+  login: (email: string, senha: string) => Promise<void>;
   logout: () => void;
 }
-
-const STORAGE_KEY = 'vitacare:auth';
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [usuario, setUsuario] = useState<Usuario | null>(null);
+  const [estado, setEstado] = useState<PayloadPersistido | null>(null);
+  const navigate = useNavigate();
 
+  // Restaura sessão persistida na carga.
   useEffect(() => {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      try { setUsuario(JSON.parse(raw) as Usuario); } catch { /* ignora */ }
+    const raw = localStorage.getItem(AUTH_STORAGE_KEY);
+    if (!raw) return;
+    try {
+      setEstado(JSON.parse(raw) as PayloadPersistido);
+    } catch {
+      localStorage.removeItem(AUTH_STORAGE_KEY);
     }
   }, []);
 
-  const login = (email: string, _senha: string) => {
-    const u: Usuario = {
-      email,
-      nome: nomeAPartirDoEmail(email),
-      perfil: inferirPerfil(email),
-    };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(u));
-    setUsuario(u);
-  };
+  const logout = useCallback(() => {
+    localStorage.removeItem(AUTH_STORAGE_KEY);
+    setEstado(null);
+  }, []);
 
-  const logout = () => {
-    localStorage.removeItem(STORAGE_KEY);
-    setUsuario(null);
-  };
+  // Reage ao 401 disparado pelo interceptor: limpa estado e redireciona.
+  useEffect(() => {
+    const handler = () => {
+      setEstado(null);
+      navigate('/login', { replace: true });
+    };
+    window.addEventListener(UNAUTHORIZED_EVENT, handler);
+    return () => window.removeEventListener(UNAUTHORIZED_EVENT, handler);
+  }, [navigate]);
+
+  const login = useCallback(async (email: string, senha: string) => {
+    try {
+      const resp = await authService.login(email.trim(), senha);
+      const payload: PayloadPersistido = { token: resp.token, usuario: resp.usuario };
+      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(payload));
+      setEstado(payload);
+    } catch (e) {
+      // Mantém o erro original (ServiceError) para a tela de Login formatar.
+      if (e instanceof ServiceError) throw e;
+      throw e;
+    }
+  }, []);
 
   return (
-    <AuthContext.Provider value={{ usuario, login, logout }}>
+    <AuthContext.Provider
+      value={{
+        usuario: estado?.usuario ?? null,
+        token: estado?.token ?? null,
+        login,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -59,17 +89,4 @@ export function useAuth(): AuthContextValue {
   return ctx;
 }
 
-function nomeAPartirDoEmail(email: string): string {
-  const local = email.split('@')[0] ?? email;
-  return local
-    .split(/[._-]/)
-    .filter(Boolean)
-    .map(p => p.charAt(0).toUpperCase() + p.slice(1))
-    .join(' ');
-}
-
-function inferirPerfil(email: string): Perfil {
-  if (email.startsWith('admin')) return 'admin';
-  if (email.startsWith('prof'))  return 'profissional';
-  return 'cuidador';
-}
+export type { Perfil, UsuarioLogado };

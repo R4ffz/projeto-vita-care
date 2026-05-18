@@ -7,3 +7,4 @@ export * as leiturasService  from './leituras';
 export * as alertasService   from './alertas';
 export * as limitesService   from './limites';
 export * as simuladorService from './simulador';
+export * as authService      from './auth';

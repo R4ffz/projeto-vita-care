@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowRight, Lock, Mail } from 'lucide-react';
+import { ArrowRight, Lock, Mail, AlertTriangle } from 'lucide-react';
 import { useAuth } from '@/auth/AuthContext';
+import { ServiceError } from '@/lib/api';
 import { Logo } from '@/components/Logo';
 import { SimuladorBadge } from '@/components/SimuladorBadge';
 
@@ -13,18 +14,28 @@ export function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const { login } = useAuth();
-  const [email, setEmail] = useState('cuidador@vitacare.local');
-  const [senha, setSenha] = useState('vitacare');
+  const [email, setEmail] = useState('admin@vitacare.local');
+  const [senha, setSenha] = useState('admin123');
   const [carregando, setCarregando] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
 
-  const submit = (e: FormEvent) => {
+  const submit = async (e: FormEvent) => {
     e.preventDefault();
     setCarregando(true);
-    setTimeout(() => {
-      login(email, senha);
+    setErro(null);
+    try {
+      await login(email, senha);
       const destino = (location.state as LocationState | null)?.from ?? '/central';
       navigate(destino, { replace: true });
-    }, 250);
+    } catch (err) {
+      if (err instanceof ServiceError) {
+        setErro(err.status === 401 ? 'E-mail ou senha incorretos.' : err.message);
+      } else {
+        setErro('Falha inesperada ao entrar.');
+      }
+    } finally {
+      setCarregando(false);
+    }
   };
 
   return (
@@ -76,6 +87,14 @@ export function Login() {
             </p>
 
             <form onSubmit={submit} className="mt-8 space-y-4">
+              {erro && (
+                <div role="alert" className="flex items-start gap-2 px-3 py-2.5
+                                              rounded-lg bg-rose-50 border border-rose-200">
+                  <AlertTriangle className="h-4 w-4 text-vita-crit shrink-0 mt-0.5" />
+                  <span className="text-xs text-rose-800">{erro}</span>
+                </div>
+              )}
+
               <div>
                 <label className="vita-label">E-mail corporativo</label>
                 <div className="relative">
@@ -87,6 +106,7 @@ export function Login() {
                     onChange={(e) => setEmail(e.target.value)}
                     className="vita-input pl-9"
                     placeholder="seu.nome@instituicao.org"
+                    autoComplete="email"
                   />
                 </div>
               </div>
@@ -102,6 +122,7 @@ export function Login() {
                     onChange={(e) => setSenha(e.target.value)}
                     className="vita-input pl-9"
                     placeholder="••••••••"
+                    autoComplete="current-password"
                   />
                 </div>
               </div>
@@ -112,13 +133,14 @@ export function Login() {
             </form>
 
             <div className="mt-6 px-4 py-3 rounded-lg bg-white border border-vita-border">
-              <div className="text-[11px] font-mono uppercase tracking-wider text-vita-muted mb-1">
-                Acesso de demonstração
+              <div className="text-[11px] font-mono uppercase tracking-wider text-vita-muted mb-2">
+                Credenciais de demonstração
               </div>
-              <div className="text-xs text-vita-text">
-                Qualquer e-mail e senha são aceitos nesta fase. Use <span className="font-mono">admin@…</span>,
-                {' '}<span className="font-mono">prof@…</span> ou outro para alternar o perfil exibido.
-              </div>
+              <ul className="text-[11px] text-vita-text space-y-1 font-mono">
+                <li>admin@vitacare.local · admin123 <span className="text-vita-muted">(ADMIN)</span></li>
+                <li>enfermagem@vitacare.local · profissional123 <span className="text-vita-muted">(PROFISSIONAL)</span></li>
+                <li>cuidador@vitacare.local · cuidador123 <span className="text-vita-muted">(CUIDADOR)</span></li>
+              </ul>
             </div>
           </div>
         </div>

@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { LogOut, ShieldCheck } from 'lucide-react';
-import { useAuth, type Perfil } from '@/auth/AuthContext';
+import { useAuth } from '@/auth/AuthContext';
+import type { Perfil } from '@/types';
 import { SimuladorBadge } from './SimuladorBadge';
 
 interface Props {
@@ -9,9 +10,9 @@ interface Props {
 }
 
 const ROTULO_PERFIL: Record<Perfil, string> = {
-  cuidador:     'Cuidador',
-  profissional: 'Profissional',
-  admin:        'Administrador',
+  CUIDADOR:     'Cuidador',
+  PROFISSIONAL: 'Profissional',
+  ADMIN:        'Administrador',
 };
 
 export function Topbar({ titulo, subtitulo }: Props) {

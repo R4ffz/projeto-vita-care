@@ -70,6 +70,23 @@ export interface ApiError {
   fields?: Record<string, string>;
 }
 
+// ─── Autenticação (Prompt 16) ────────────────────────────────────────────────
+
+export type Perfil = 'CUIDADOR' | 'PROFISSIONAL' | 'ADMIN';
+
+export interface UsuarioLogado {
+  id: number;
+  email: string;
+  nome: string;
+  perfil: Perfil;
+}
+
+export interface LoginResponse {
+  token: string;
+  expiresInHours: number;
+  usuario: UsuarioLogado;
+}
+
 export type EstadoSimulado = 'normal' | 'taquicardia' | 'baixa_saturacao' | 'febre';
 export type PerfilKey = 'jovem_saudavel' | 'hipertenso' | 'idoso_fragilizado';
 
