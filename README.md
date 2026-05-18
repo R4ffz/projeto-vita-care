@@ -1,48 +1,70 @@
 # VitaCare IoT
 
-Aplicação web de monitoramento contínuo de sinais vitais de idosos em ambiente domiciliar, baseada em arquitetura IoT de quatro camadas, com a camada de dispositivos representada por um simulador de software.
+Aplicação web de monitoramento contínuo de sinais vitais de idosos em ambiente
+domiciliar. Implementa o ciclo completo de uma arquitetura IoT — coleta,
+transporte por broker MQTT, processamento, persistência, regras de alerta e
+visualização em tempo real — com a camada de dispositivos representada por um
+simulador de software.
 
-> ⚠️ **Protótipo acadêmico.** Este sistema utiliza **dados simulados** e foi desenvolvido como trabalho da disciplina de Internet das Coisas. **Não substitui** atendimento médico, exames clínicos ou serviços de emergência.
+> **Protótipo acadêmico** desenvolvido para a disciplina de Internet das Coisas.
+> Os dados exibidos não vêm de sensores físicos e o sistema **não substitui**
+> atendimento médico, exames clínicos ou serviços de emergência.
 
 ---
 
-## Arquitetura resumida
+## Problema
+
+Idosos vivendo sozinhos ou com supervisão parcial enfrentam risco aumentado de
+eventos clínicos silenciosos (quedas, picos pressóricos, dessaturação) que
+podem evoluir sem intervenção oportuna. Acompanhar esses sinais à distância
+exige uma plataforma capaz de:
+
+- coletar continuamente sinais vitais com latência baixa;
+- aplicar regras automáticas e gerar alertas priorizados;
+- entregar os eventos a cuidadores e equipe de saúde em tempo real;
+- preservar histórico para análise posterior.
+
+O VitaCare IoT modela esse cenário em ambiente controlado, demonstrando o fluxo
+ponta a ponta entre dispositivo, broker, backend, banco e painel clínico.
+
+---
+
+## Arquitetura
+
+Quatro camadas, cada uma com responsabilidade isolada, conversando por
+contratos padronizados:
 
 ```
-┌──────────────────┐   MQTT publish    ┌─────────────────┐
-│   Simulador      │  pacientes/{id}/  │                 │
-│   Node.js        │ ──── sinais ────▶ │   Mosquitto     │
-│   (dispositivo   │ ──── queda  ────▶ │   (broker MQTT) │
-│    IoT virtual)  │ ◀── comando ───── │                 │
-└──────────────────┘                   └────────┬────────┘
-                                                │ subscribe
-                                                ▼
-┌──────────────────────────────────────────────────────────┐
-│            Backend Spring Boot (Java 17, Maven)          │
-│                                                          │
-│  Spring Integration MQTT ─▶ Service de leituras          │
-│                              │                           │
-│                              ├─▶ JPA ─▶ PostgreSQL       │
-│                              ├─▶ Avaliador de regras     │
-│                              └─▶ STOMP broker            │
-│                                                          │
-│  API REST + WebSocket/STOMP                              │
-└──────────────────────┬───────────────────────────────────┘
-                       │
-                       ▼
-┌──────────────────────────────────────────────────────────┐
-│         Frontend React (Vite + TS + Tailwind)            │
-│  Login · Central · Dashboard · Histórico · Alertas       │
-│  Painel do simulador  +  badge "MODO SIMULAÇÃO"          │
-└──────────────────────────────────────────────────────────┘
+  ┌──────────────────────────────────────────────────────────────┐
+  │ 1. DISPOSITIVOS (simulada)                                   │
+  │    Simulador Node.js publica sinais e eventos via mqtt.js    │
+  └────────────────────────┬─────────────────────────────────────┘
+                           │ MQTT publish
+                           ▼
+  ┌──────────────────────────────────────────────────────────────┐
+  │ 2. REDE                                                      │
+  │    Broker MQTT Mosquitto distribui mensagens entre           │
+  │    publicadores e assinantes                                 │
+  └────────────────────────┬─────────────────────────────────────┘
+                           │ MQTT subscribe
+                           ▼
+  ┌──────────────────────────────────────────────────────────────┐
+  │ 3. PROCESSAMENTO                                             │
+  │    Backend Spring Boot consome MQTT (Eclipse Paho), persiste │
+  │    em PostgreSQL (JPA + Flyway), avalia regras de alerta e   │
+  │    publica eventos em tempo real via WebSocket/STOMP         │
+  └────────────────────────┬─────────────────────────────────────┘
+                           │ REST + STOMP
+                           ▼
+  ┌──────────────────────────────────────────────────────────────┐
+  │ 4. APLICAÇÃO                                                 │
+  │    Frontend React (Vite + TS) exibe central de               │
+  │    monitoramento, dashboard do paciente, alertas, histórico  │
+  │    e painel de controle do simulador                         │
+  └──────────────────────────────────────────────────────────────┘
 ```
 
-Quatro camadas IoT:
-
-1. **Dispositivos** — simulador Node.js publicando sinais vitais virtuais.
-2. **Rede** — broker MQTT Mosquitto distribuindo mensagens entre publicadores e assinantes.
-3. **Processamento** — backend Spring Boot consumindo MQTT, persistindo em PostgreSQL, aplicando regras de alerta e emitindo eventos em tempo real.
-4. **Aplicação** — frontend React exibindo dashboard, histórico, alertas e painel do simulador.
+Aprofundamento técnico em [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md).
 
 ---
 
@@ -50,14 +72,14 @@ Quatro camadas IoT:
 
 | Camada | Tecnologia |
 |---|---|
-| Simulador | Node.js 20+, `mqtt.js` |
-| Broker MQTT | Mosquitto 2.x |
-| Backend | Java 17, Spring Boot 3 (Web, Data JPA, Security, WebSocket), Spring Integration MQTT, Flyway, JWT |
+| Simulador IoT | Node.js 20+, `mqtt.js`, Express (servidor de controle) |
+| Broker MQTT | Eclipse Mosquitto 2.0 |
+| Backend | Java 17, Spring Boot 3.5 (Web, Data JPA, Security, WebSocket), Eclipse Paho MQTT, Flyway, JJWT |
 | Banco de dados | PostgreSQL 16 |
-| Frontend | React 18, Vite, TypeScript, Tailwind CSS, Axios, `@stomp/stompjs` + SockJS, Chart.js |
-| Build backend | Maven |
-| Infra local | Docker Compose |
-| Documentação da API | Springdoc OpenAPI / Swagger UI |
+| Frontend | React 18, TypeScript, Vite, Tailwind CSS, React Router 6, Axios, `@stomp/stompjs`, Recharts |
+| Servidor web (frontend) | Nginx 1.27 (em produção/Docker), reverse proxy de `/api` e `/ws` |
+| Build backend | Maven (wrapper incluído) |
+| Containerização | Docker + Docker Compose |
 
 ---
 
@@ -65,191 +87,233 @@ Quatro camadas IoT:
 
 | Pasta / arquivo | Conteúdo |
 |---|---|
-| `backend/` | Aplicação Java Spring Boot — API REST, consumidor MQTT, regras de alerta, broadcast WebSocket/STOMP. |
-| `frontend/` | Aplicação React + Vite + TypeScript — UI completa do sistema (login, dashboard, histórico, alertas, painel do simulador). |
-| `simulator/` | Simulador Node.js que publica sinais vitais e eventos no broker MQTT e escuta tópicos de comando vindos do backend. |
-| `docs/` | Documentação técnica complementar — diagramas, contratos MQTT, decisões de arquitetura, roteiro de apresentação. |
-| `docker-compose.yml` | Orquestração local dos serviços de infraestrutura (PostgreSQL + Mosquitto). |
-| `mosquitto.conf` | Configuração do broker Mosquitto para desenvolvimento local. |
-| `.gitignore` | Padrões de arquivos ignorados pelo Git (Java, Node, React, Docker, IDEs, SO). |
+| `backend/` | Aplicação Spring Boot — REST, consumo MQTT, regras de alerta, WebSocket STOMP, JWT. |
+| `frontend/` | SPA React + Vite + TypeScript — central, dashboard, histórico, alertas, painel do simulador. |
+| `simulator/` | Simulador Node.js que publica MQTT e expõe API HTTP de controle. |
+| `docs/` | Documentação técnica complementar (arquitetura, roteiro de apresentação). |
+| `docker-compose.yml` | Orquestração dos 5 serviços na rede `vitacare`. |
+| `mosquitto.conf` | Configuração do broker para desenvolvimento local. |
+| `.env.example` | Variáveis opcionais (senha do Postgres, segredo do JWT, perfil de simulação). |
 
 ---
 
-## Como rodar
+## Como rodar com Docker (recomendado)
 
-Esta fase do projeto sobe apenas a **infraestrutura local** (PostgreSQL + Mosquitto). Backend, frontend e simulador são adicionados nas próximas fases.
+Sobe a stack completa — Postgres, Mosquitto, backend, frontend e simulador —
+sem precisar instalar Java, Node ou Maven no host.
 
-### Pré-requisitos
-
-- Docker Desktop (Windows / macOS) ou Docker Engine + Docker Compose v2.20+ (Linux).
-
-### Subir os serviços
+**Pré-requisitos:** Docker Desktop (Windows/macOS) ou Docker Engine + Compose
+v2.20+ (Linux).
 
 ```bash
-docker compose up -d
+docker compose up --build -d        # primeira vez: ~2-4 min (Maven + npm)
+docker compose ps                   # 5 containers devem aparecer 'healthy'
+docker compose logs -f backend      # acompanhar inicialização do Spring
 ```
 
-Isso sobe:
+Acessos após subir:
 
-- **PostgreSQL** em `localhost:5432` — database `vitacare`, usuário `vitacare`, senha `vitacare_dev`.
-- **Mosquitto** em `localhost:1883` — acesso anônimo, apenas para desenvolvimento local.
+| Serviço | URL |
+|---|---|
+| Frontend (SPA) | http://localhost:3000 |
+| Backend REST (direto) | http://localhost:8080/api |
+| Backend REST (via proxy nginx) | http://localhost:3000/api |
+| WebSocket STOMP | `ws://localhost:3000/ws` ou `ws://localhost:8080/ws` |
+| API de controle do simulador | http://localhost:4000/sim |
+| PostgreSQL | `localhost:5432` (db `vitacare`, user `vitacare`, pwd `vitacare_dev`) |
+| Mosquitto | `localhost:1883` (acesso anônimo, apenas dev local) |
 
-Verificar status e logs:
-
-```bash
-docker compose ps                # ambos devem aparecer "running" (Postgres "healthy")
-docker compose logs -f           # acompanhar logs (Ctrl+C para sair)
-```
-
-### Testar o PostgreSQL
-
-```bash
-docker exec -it vitacare-postgres psql -U vitacare -d vitacare -c "SELECT version();"
-```
-
-Deve retornar a versão do PostgreSQL 16.
-
-### Testar o Mosquitto
-
-Em **um terminal**, abra um subscriber escutando um tópico de teste:
-
-```bash
-docker exec -it vitacare-mosquitto mosquitto_sub -h localhost -t "vitacare/teste" -v
-```
-
-(O terminal fica bloqueado aguardando mensagens.)
-
-Em **outro terminal**, publique uma mensagem:
-
-```bash
-docker exec -it vitacare-mosquitto mosquitto_pub -h localhost -t "vitacare/teste" -m "ola VitaCare"
-```
-
-No primeiro terminal deve aparecer:
-
-```
-vitacare/teste ola VitaCare
-```
-
-Teste opcional com a estrutura real de tópicos que o projeto vai usar:
-
-```bash
-# Em um terminal: escuta sinais de qualquer paciente
-docker exec -it vitacare-mosquitto mosquitto_sub -h localhost -t "pacientes/+/sinais" -v
-
-# Em outro terminal: publica um sinal vital de exemplo
-docker exec -it vitacare-mosquitto mosquitto_pub -h localhost -t "pacientes/1/sinais" -m '{"bpm":78,"spo2":97,"temp":36.8}'
-```
-
-> Se você tiver os clientes Mosquitto instalados localmente (`mosquitto-clients` no Linux, `mosquitto` via Homebrew no macOS, instalador oficial no Windows), pode rodar os mesmos comandos removendo o prefixo `docker exec -it vitacare-mosquitto`.
-
-### Parar os serviços
-
-```bash
-docker compose down              # para os containers, mantém o volume do Postgres
-docker compose down -v           # para tudo e apaga os dados persistidos do Postgres
-```
-
----
-
-## Subir a stack completa via Docker
-
-O `docker-compose.yml` sobe a stack inteira: **PostgreSQL**, **Mosquitto**,
-**backend Spring Boot**, **frontend React (Nginx)** e o **simulador IoT Node.js** —
-tudo isolado na rede `vitacare`. Não precisa instalar Java, Node ou Maven no host.
-
-### Pré-requisitos
-
-- Docker Desktop (Windows / macOS) ou Docker Engine + Compose v2.20+ (Linux).
-
-### Subir tudo do zero
-
-```bash
-docker compose up --build -d     # builda imagens e sobe os 5 serviços
-docker compose ps                # backend, frontend, simulator devem aparecer 'healthy'
-docker compose logs -f backend   # acompanhar logs do Spring
-```
-
-A primeira build demora ~2–4 min (download do Maven + npm). Builds subsequentes
-reaproveitam o cache (segundos).
-
-### Limpar e recomeçar
-
-```bash
-docker compose down              # para tudo, mantém volume do Postgres
-docker compose down -v           # para tudo e apaga o banco
-docker compose build --no-cache  # força rebuild sem cache
-```
-
-### Acessos
-
-| Serviço     | URL / porta                          | Credencial / observação |
-|---|---|---|
-| Frontend    | http://localhost:3000                | login JWT (ver abaixo) |
-| Backend REST| http://localhost:8080/api            | exposto direto para curl/Postman |
-| `/api/health` | http://localhost:8080/api/health   | público (sem token) |
-| Backend via proxy | http://localhost:3000/api/…    | nginx do frontend encaminha |
-| WebSocket   | ws://localhost:3000/ws (via proxy) ou ws://localhost:8080/ws | STOMP nativo |
-| PostgreSQL  | localhost:5432, db `vitacare`        | user `vitacare` / pwd `vitacare_dev` |
-| Mosquitto   | localhost:1883                       | anônimo (dev) |
-| Simulator   | http://localhost:4000/sim            | controle HTTP (POST `/sim/{id}/{queda,taquicardia,…}`) |
-
-> **Swagger não está habilitado** neste protótipo. Endpoints REST estão
-> documentados no README do backend.
-
-### Credenciais de login (seed)
+Credenciais de login (criadas automaticamente na primeira execução):
 
 | E-mail | Senha | Perfil |
 |---|---|---|
-| `admin@vitacare.local`      | `admin123`        | ADMIN |
+| `admin@vitacare.local` | `admin123` | ADMIN |
 | `enfermagem@vitacare.local` | `profissional123` | PROFISSIONAL |
-| `cuidador@vitacare.local`   | `cuidador123`     | CUIDADOR |
+| `cuidador@vitacare.local` | `cuidador123` | CUIDADOR |
 
-### Variáveis de ambiente opcionais
-
-Copie `.env.example` para `.env` na raiz para sobrescrever senha do Postgres ou
-o secret do JWT. Defaults adequados para dev já vêm setados.
-
-### Arquitetura Docker
-
-```
-  navegador  ──── http://localhost:3000 ────▶  vitacare-frontend (nginx)
-                                                   │
-                                                   │ /api/* /ws (reverse proxy)
-                                                   ▼
-                                              vitacare-backend (Spring Boot)
-                                                   │
-                              ┌────────────────────┴──────────────────┐
-                              ▼                                       ▼
-                         postgres:5432                          mosquitto:1883
-                       (vitacare-postgres)                  (vitacare-mosquitto)
-                                                                   ▲
-                                                                   │ MQTT publish
-                                                                   │ (mqtt://mosquitto:1883)
-  navegador  ──── http://localhost:4000 ────▶  vitacare-simulator (Node.js)
-                                                  (controle HTTP /sim/*)
-```
-
-Os 5 containers compartilham a rede bridge `vitacare`. Dentro dela, a resolução
-é por nome de serviço (`postgres`, `mosquitto`, `backend`, `frontend`,
-`simulator`). O simulador publica MQTT em `mqtt://mosquitto:1883`; fora do
-Docker, o mesmo binário cai no fallback `mqtt://localhost:1883` e continua
-funcionando.
-
-### Controlar o simulador
-
-Direto pelo host (porta exposta):
+Operações úteis:
 
 ```bash
-curl http://localhost:4000/sim/status
-curl -X POST http://localhost:4000/sim/2/taquicardia
-curl -X POST http://localhost:4000/sim/3/queda \
-     -H 'Content-Type: application/json' -d '{"intensidade":3.2}'
-curl -X POST http://localhost:4000/sim/2/reset
+docker compose down                 # para tudo, mantém o volume do Postgres
+docker compose down -v              # para tudo e apaga o banco
+docker compose up -d --build <svc>  # rebuilda e recria apenas um serviço
 ```
 
-O Painel do Simulador no frontend (`/simulador`) consome esses mesmos
-endpoints. O CLI por stdin (digitar `queda 1` no terminal) só funciona quando
-o simulador roda fora do Docker com `cd simulator && npm start` — dentro do
-container, `stdin` não é TTY e o CLI é desativado automaticamente.
+Sobrescritas opcionais via `.env` na raiz (copie de `.env.example`):
+`POSTGRES_PASSWORD`, `JWT_SECRET`, `SIM_PATIENT_IDS`,
+`SIM_SINAIS_INTERVAL_MS`, `SIM_STATUS_INTERVAL_MS`.
 
+---
+
+## Como rodar manualmente (sem Docker)
+
+Útil para desenvolvimento com hot-reload do Vite e do `spring-boot:run`.
+
+**Pré-requisitos:** Docker (para Postgres e Mosquitto), Java 17, Node.js 20+.
+
+```bash
+# 1. Infraestrutura (somente Postgres + Mosquitto via Docker)
+docker compose up -d postgres mosquitto
+
+# 2. Backend Spring Boot — terminal próprio
+cd backend
+./mvnw spring-boot:run
+
+# 3. Simulador IoT — terminal próprio
+cd simulator
+npm install                          # primeira vez
+npm start                            # CLI interativo: `queda 1`, `taquicardia 2`, etc.
+
+# 4. Frontend React — terminal próprio
+cd frontend
+npm install                          # primeira vez
+npm run dev                          # http://localhost:5173 (HMR ativo)
+```
+
+Quando o simulador roda **fora** do Docker, ele cai no fallback
+`mqtt://localhost:1883` e mantém o CLI interativo (digitar comandos no
+terminal). Dentro do Docker, `stdin` não é TTY e o CLI é desativado
+automaticamente — controle apenas via HTTP.
+
+---
+
+## Endpoints REST
+
+Base: `http://localhost:8080` (direto) ou `http://localhost:3000` (via nginx
+proxy do frontend).
+
+| Método | Endpoint | Acesso | Descrição |
+|---|---|---|---|
+| GET | `/api/health` | público | Health check |
+| POST | `/api/auth/login` | público | Autentica e devolve JWT (8h) |
+| GET | `/api/auth/me` | autenticado | Dados do usuário do token |
+| GET | `/api/pacientes` | autenticado | Lista pacientes |
+| GET | `/api/pacientes/{id}` | autenticado | Detalhe |
+| POST | `/api/pacientes` | autenticado | Cadastra (cria limites padrão automaticamente) |
+| PUT | `/api/pacientes/{id}` | autenticado | Atualiza |
+| DELETE | `/api/pacientes/{id}` | **ADMIN** | Exclui |
+| GET | `/api/pacientes/{id}/limites` | autenticado | Faixas clínicas do paciente |
+| PUT | `/api/pacientes/{id}/limites` | autenticado | Atualiza limites |
+| GET | `/api/pacientes/{id}/leituras?minutos=N` | autenticado | Histórico (N de 1 a 1440) |
+| GET | `/api/alertas` | autenticado | Todos os alertas |
+| GET | `/api/pacientes/{id}/alertas` | autenticado | Alertas de um paciente |
+| PATCH | `/api/alertas/{id}/atendido` | autenticado | Marca atendido |
+
+Limites clínicos padrão criados ao cadastrar paciente:
+
+| Sinal | Mínimo | Máximo |
+|---|---|---|
+| Frequência cardíaca | 50 bpm | 100 bpm |
+| Saturação SpO₂ | 92 % | — |
+| Temperatura | — | 37,8 °C |
+
+Alertas idênticos consecutivos para o mesmo paciente são deduplicados em janela
+de 5 minutos para evitar ruído quando a violação persiste.
+
+### API de controle do simulador
+
+Servidor HTTP local, porta 4000. CORS aberto para o frontend dev.
+
+| Método | Endpoint | Descrição |
+|---|---|---|
+| GET | `/sim/status` | Estado atual de cada paciente simulado |
+| POST | `/sim/{id}/taquicardia` | Fixa o paciente em taquicardia (BPM ~140) |
+| POST | `/sim/{id}/baixa-saturacao` | Fixa em saturação baixa (SpO₂ ~88) |
+| POST | `/sim/{id}/febre` | Fixa em febre (temp ~38,7 °C) |
+| POST | `/sim/{id}/queda` | Publica evento pontual de queda (body: `{intensidade}`) |
+| POST | `/sim/{id}/reset` | Volta o paciente ao estado normal |
+| POST | `/sim/{id}/pausar` | Para de publicar sinais do paciente |
+| POST | `/sim/{id}/retomar` | Retoma a publicação |
+
+---
+
+## Tópicos MQTT e canais WebSocket
+
+### MQTT (publicador: simulador; assinante: backend)
+
+| Tópico | Payload JSON |
+|---|---|
+| `pacientes/{id}/sinais` | `{ "bpm": 78, "spo2": 97, "temp": 36.8, "ts": "2026-05-18T10:00:00Z" }` |
+| `pacientes/{id}/queda`  | `{ "detectada": true, "intensidade": 2.7, "ts": "..." }` |
+| `pacientes/{id}/status` | `{ "online": true, "ts": "..." }` |
+
+### WebSocket / STOMP (publicador: backend; assinante: frontend)
+
+Endpoint de conexão: `/ws` (STOMP nativo, sem SockJS).
+
+| Tópico | Payload | Quando |
+|---|---|---|
+| `/topic/pacientes/{id}/leituras` | `LeituraEvent` | Cada nova leitura MQTT persistida |
+| `/topic/pacientes/{id}/alertas` | `AlertaEvent` | Cada novo alerta do paciente |
+| `/topic/alertas` | `AlertaEvent` | Feed global de alertas |
+| `/topic/central` | `AlertaEvent` | Espelho do feed global, dedicado à Central |
+
+---
+
+## Fluxo de funcionamento
+
+Sequência completa de uma queda crítica disparada pelo painel do simulador:
+
+```
+1. Operador clica "Queda" no Painel do Simulador (frontend)
+       │
+       ▼
+2. Frontend → POST http://localhost:4000/sim/3/queda  {intensidade: 3.2}
+       │
+       ▼
+3. Simulator chama PacienteVirtual.gerarQueda(...) e publica MQTT:
+   tópico  : pacientes/3/queda
+   payload : { "detectada": true, "intensidade": 3.2, "ts": "..." }
+       │
+       ▼
+4. Mosquitto distribui aos assinantes
+       │
+       ▼
+5. Backend (MqttListener) recebe → dispatch para MqttMessageProcessor
+   → AvaliadorAlertas.registrarQueda(paciente=3, intensidade=3.2)
+   → cria entidade Alerta no PostgreSQL (severidade CRITICA, pois ≥ 2.5)
+       │
+       ▼
+6. RealtimePublisher publica em 3 canais STOMP:
+   /topic/pacientes/3/alertas
+   /topic/alertas
+   /topic/central
+       │
+       ▼
+7. Frontend (Dashboard do paciente 3) recebe o AlertaEvent
+   → abre Modal de Emergência em tela cheia
+   → lista de Alertas atualiza
+   → Central atualiza contadores
+```
+
+O mesmo fluxo (sem o modal de emergência) vale para taquicardia, baixa
+saturação e febre — só que o gatilho é uma leitura periódica anormal em vez de
+um evento pontual.
+
+---
+
+## Como demonstrar
+
+Roteiro completo (12–15 min) em
+[`docs/ROTEIRO_APRESENTACAO.md`](docs/ROTEIRO_APRESENTACAO.md). Versão curta
+para validação rápida:
+
+1. `docker compose up -d` — aguardar todos os 5 containers `healthy`.
+2. Abrir `http://localhost:3000` e logar com `admin@vitacare.local` / `admin123`.
+3. **Central de monitoramento** — 3 pacientes aparecem, leituras ao vivo.
+4. Abrir paciente **Maria das Graças (#1)**.
+5. Em outro terminal:
+   ```bash
+   curl -X POST http://localhost:4000/sim/1/taquicardia
+   ```
+   Em ~5 s o BPM sobe para ~140, o card vira borda vermelha, um novo
+   alerta `TAQUICARDIA ALTA` aparece em "Alertas recentes" — tudo via
+   WebSocket, sem reload.
+6. Voltar para a Central → clicar **Painel do simulador** → disparar
+   **Queda** no paciente Antônio (#3). O Dashboard do paciente 3 abre o
+   **Modal de Emergência** vermelho. Marcar atendido fecha o modal e atualiza
+   a lista de alertas.
+
+Em caso de produção real, dados de saúde seriam considerados sensíveis pela
+LGPD e exigiriam consentimento explícito, criptografia em trânsito e em
+repouso, e controle granular de acesso — pontos que este protótipo não cobre.
