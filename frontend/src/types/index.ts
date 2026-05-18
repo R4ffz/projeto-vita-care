@@ -1,5 +1,4 @@
 // Tipos compartilhados do VitaCare IoT — espelham os contratos REST/WebSocket do backend.
-// No Prompt 12 estes tipos serão consumidos pelos services Axios.
 
 export type TipoAlerta =
   | 'BRADICARDIA'
@@ -70,7 +69,7 @@ export interface ApiError {
   fields?: Record<string, string>;
 }
 
-// ─── Autenticação (Prompt 16) ────────────────────────────────────────────────
+// ─── Autenticação ────────────────────────────────────────────────────────────
 
 export type Perfil = 'CUIDADOR' | 'PROFISSIONAL' | 'ADMIN';
 

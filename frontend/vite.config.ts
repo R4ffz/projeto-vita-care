@@ -11,7 +11,7 @@ export default defineConfig({
   },
   server: {
     port: 5173,
-    // Proxies preparados para o Prompt 12 (integração real).
+    // Proxies para o backend Spring e o servidor de controle do simulador em dev.
     proxy: {
       '/api': 'http://localhost:8080',
       '/ws':  { target: 'ws://localhost:8080', ws: true },

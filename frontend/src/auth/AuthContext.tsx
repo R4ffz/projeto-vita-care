@@ -1,4 +1,4 @@
-// Autenticação real via Spring Security + JWT (Prompt 16).
+// Autenticação real via Spring Security + JWT.
 // O token e os dados do usuário ficam no localStorage; o interceptor do Axios
 // (em src/lib/api.ts) injeta Authorization automaticamente e dispara o evento
 // `vitacare:unauthorized` quando o backend responde 401 em rota protegida.
