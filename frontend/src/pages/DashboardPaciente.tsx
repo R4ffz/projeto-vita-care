@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   Heart, Droplets, Thermometer, Phone, ArrowLeft, LineChart, SlidersHorizontal,
@@ -11,7 +11,11 @@ import { SeveridadeBadge } from '@/components/SeveridadeBadge';
 import { LoadingState } from '@/components/LoadingState';
 import { ErrorState } from '@/components/ErrorState';
 import { EmptyState } from '@/components/EmptyState';
+import { LiveStatus } from '@/components/LiveStatus';
+import { EmergencyModal } from '@/components/EmergencyModal';
 import { useAsync } from '@/lib/useAsync';
+import { useDashboardRealtime } from '@/lib/useDashboardRealtime';
+import { useTickInterval } from '@/lib/useTickInterval';
 import { derivarStatus } from '@/lib/status';
 import { ServiceError } from '@/lib/api';
 import {
@@ -31,9 +35,8 @@ export function DashboardPaciente() {
   const { id } = useParams();
   const pacienteId = Number(id);
   const navigate = useNavigate();
-  const [excluindo, setExcluindo] = useState(false);
-  const [erroExcluir, setErroExcluir] = useState<ServiceError | null>(null);
 
+  // ─── Carga inicial via REST ───────────────────────────────────────────────
   const fetcher = useCallback(async (): Promise<DadosPaciente> => {
     const [paciente, leitura, limites, alertas] = await Promise.all([
       pacientesService.buscar(pacienteId),
@@ -45,6 +48,61 @@ export function DashboardPaciente() {
   }, [pacienteId]);
 
   const { data, loading, error, reload } = useAsync(fetcher, [pacienteId]);
+
+  // ─── Estado vivo (hidratado pelo REST, atualizado pelo WS) ────────────────
+  const [leituraAtual, setLeituraAtual] = useState<Leitura | null>(null);
+  const [alertas, setAlertas] = useState<Alerta[]>([]);
+  const [modalAlerta, setModalAlerta] = useState<Alerta | null>(null);
+  const [atendendoModal, setAtendendoModal] = useState(false);
+  const dispensadosRef = useRef<Set<number>>(new Set());
+
+  // Hidrata estado vivo quando o REST retorna.
+  useEffect(() => {
+    if (data) {
+      setLeituraAtual(data.leitura);
+      setAlertas(data.alertas);
+    }
+  }, [data]);
+
+  // Limpa estado dispensado ao trocar de paciente.
+  useEffect(() => {
+    dispensadosRef.current = new Set();
+    setModalAlerta(null);
+  }, [pacienteId]);
+
+  // ─── Handlers WebSocket ───────────────────────────────────────────────────
+  const onLeitura = useCallback((l: Leitura) => {
+    setLeituraAtual((prev) => {
+      if (!prev) return l;
+      const novoTs = new Date(l.timestamp).getTime();
+      const antigoTs = new Date(prev.timestamp).getTime();
+      return novoTs >= antigoTs ? l : prev;
+    });
+  }, []);
+
+  const onAlerta = useCallback((a: Alerta) => {
+    setAlertas((prev) => {
+      if (prev.some((x) => x.id === a.id)) return prev;
+      return [a, ...prev];
+    });
+    if (
+      a.tipo === 'QUEDA'
+      && a.severidade === 'CRITICA'
+      && !a.atendido
+      && !dispensadosRef.current.has(a.id)
+    ) {
+      setModalAlerta(a);
+    }
+  }, []);
+
+  const { estado: estadoWs } = useDashboardRealtime(pacienteId, { onLeitura, onAlerta });
+
+  // Mantém "última atualização" atualizada visualmente.
+  useTickInterval(10_000);
+
+  // ─── Ações ────────────────────────────────────────────────────────────────
+  const [excluindo, setExcluindo] = useState(false);
+  const [erroExcluir, setErroExcluir] = useState<ServiceError | null>(null);
 
   const excluir = async () => {
     if (!data) return;
@@ -63,13 +121,39 @@ export function DashboardPaciente() {
     }
   };
 
+  const fecharModal = () => {
+    if (modalAlerta) dispensadosRef.current.add(modalAlerta.id);
+    setModalAlerta(null);
+  };
+
+  const atenderModal = async () => {
+    if (!modalAlerta) return;
+    setAtendendoModal(true);
+    try {
+      const atualizado = await alertasService.marcarAtendido(modalAlerta.id);
+      setAlertas((prev) => prev.map((x) => (x.id === atualizado.id ? atualizado : x)));
+      dispensadosRef.current.add(modalAlerta.id);
+      setModalAlerta(null);
+    } catch {
+      // mantém o modal aberto; ErrorState do botão de excluir não cobre isso,
+      // mas o ServiceError já loga no console via interceptor.
+    } finally {
+      setAtendendoModal(false);
+    }
+  };
+
+  // ─── Render ───────────────────────────────────────────────────────────────
   if (loading) return <LoadingState label="Carregando paciente…" />;
   if (error)   return <ErrorState error={error} onRetry={reload} />;
   if (!data)   return null;
 
-  const { paciente, leitura, limites, alertas } = data;
-  const status = derivarStatus(leitura, limites);
+  const { paciente, limites } = data;
+  const status = derivarStatus(leituraAtual, limites);
   const alertasRecentes = alertas.slice(0, 5);
+  const tempNumerica = leituraAtual?.temperatura != null
+    ? Number(leituraAtual.temperatura)
+    : null;
+  const tempMaxNumerico = limites ? Number(limites.tempMax) : null;
 
   return (
     <div className="space-y-6">
@@ -79,6 +163,7 @@ export function DashboardPaciente() {
 
       {erroExcluir && <ErrorState error={erroExcluir} />}
 
+      {/* Cabeçalho do paciente */}
       <div className="vita-card px-6 py-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <div className="flex items-center gap-3 flex-wrap">
@@ -112,31 +197,39 @@ export function DashboardPaciente() {
         </div>
       </div>
 
+      {/* Sinais vitais ao vivo */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <SinalCard
           icon={Heart}        label="Frequência cardíaca" unidade="bpm"
-          valor={leitura?.bpm ?? null} status={status}
+          valor={leituraAtual?.bpm ?? null} status={status}
           faixa={limites ? `normal ${limites.bpmMin}–${limites.bpmMax}` : undefined}
         />
         <SinalCard
           icon={Droplets}     label="Saturação SpO₂" unidade="%"
-          valor={leitura?.spo2 ?? null} status={status}
+          valor={leituraAtual?.spo2 ?? null} status={status}
           faixa={limites ? `mínimo ${limites.spo2Min}` : undefined}
         />
         <SinalCard
           icon={Thermometer}  label="Temperatura" unidade="°C" casas={1}
-          valor={leitura?.temperatura != null ? Number(leitura.temperatura) : null}
-          status={status}
-          faixa={limites ? `máximo ${Number(limites.tempMax).toFixed(1)}` : undefined}
+          valor={tempNumerica} status={status}
+          faixa={tempMaxNumerico != null ? `máximo ${tempMaxNumerico.toFixed(1)}` : undefined}
         />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-4">
         <Card>
-          <CardHeader><CardTitle hint="Telemetria">Status da conexão</CardTitle></CardHeader>
+          <CardHeader>
+            <div className="flex items-center justify-between gap-2">
+              <CardTitle hint="Telemetria">Status da conexão</CardTitle>
+              <LiveStatus estado={estadoWs} />
+            </div>
+          </CardHeader>
           <CardBody className="space-y-3">
             <Linha rotulo="Dispositivo"    valor="IoT virtual" />
-            <Linha rotulo="Última leitura" valor={leitura ? formatarHoraRelativa(leitura.timestamp) : 'sem leitura recente'} />
+            <Linha
+              rotulo="Última leitura"
+              valor={leituraAtual ? formatarHoraRelativa(leituraAtual.timestamp) : 'sem leitura recente'}
+            />
             <Linha rotulo="Tópico MQTT"    valor={`pacientes/${paciente.id}/sinais`} mono />
             <Linha rotulo="Canal WS"       valor={`/topic/pacientes/${paciente.id}/leituras`} mono />
           </CardBody>
@@ -174,6 +267,17 @@ export function DashboardPaciente() {
           </CardBody>
         </Card>
       </div>
+
+      {/* Modal de emergência para queda crítica */}
+      {modalAlerta && (
+        <EmergencyModal
+          alerta={modalAlerta}
+          paciente={paciente}
+          onFechar={fecharModal}
+          onAtender={atenderModal}
+          atendendo={atendendoModal}
+        />
+      )}
     </div>
   );
 }
