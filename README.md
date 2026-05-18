@@ -6,6 +6,8 @@ transporte por broker MQTT, processamento, persistência, regras de alerta e
 visualização em tempo real — com a camada de dispositivos representada por um
 simulador de software.
 
+![Central de monitoramento com pacientes em estado crítico e alertas pendentes](docs/img/central-com-alertas.png)
+
 > **Protótipo acadêmico** desenvolvido para a disciplina de Internet das Coisas.
 > Os dados exibidos não vêm de sensores físicos e o sistema **não substitui**
 > atendimento médico, exames clínicos ou serviços de emergência.
@@ -94,6 +96,76 @@ Aprofundamento técnico em [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md).
 | `docker-compose.yml` | Orquestração dos 5 serviços na rede `vitacare`. |
 | `mosquitto.conf` | Configuração do broker para desenvolvimento local. |
 | `.env.example` | Variáveis opcionais (senha do Postgres, segredo do JWT, perfil de simulação). |
+
+---
+
+## Telas da aplicação
+
+As capturas abaixo foram feitas na aplicação rodando localmente via
+`docker compose up --build`, autenticada como **admin** e com eventos clínicos
+disparados pelo painel do simulador IoT.
+
+### Acesso à plataforma
+
+![Tela de login centralizada com gradiente clínico](docs/img/login.png)
+
+Login centralizado sobre gradiente sálvia → azul-petróleo. Três acessos de
+demonstração (Administrador, Profissional, Cuidador) ficam disponíveis abaixo
+do formulário e preenchem o campo automaticamente ao serem clicados.
+
+### Central de monitoramento — todos os pacientes estáveis
+
+![Central com 3 pacientes estáveis, cada um com sparkline de BPM](docs/img/central.png)
+
+Saudação personalizada e data clínica acima do resumo do plantão. Cada paciente
+estável exibe um mini-gráfico da tendência de BPM (sparkline) e os três sinais
+vitais principais. Fita ECG animada ancorada no rodapé reforça a sensação de
+"monitor ligado".
+
+### Central com pacientes em estado crítico
+
+![Central com 2 pacientes críticos e faixa de alerta vermelha](docs/img/central-com-alertas.png)
+
+Quando o sistema detecta sinais fora dos limites configurados, a faixa de
+status muda de tom (sálvia → âmbar → coral) e os pacientes em risco sobem para
+a seção **Requer atenção**, com botão direto **Ver paciente** para o
+profissional iniciar o atendimento.
+
+### Dashboard do paciente em tempo real
+
+![Dashboard de Maria das Graças Souza marcada como Crítica com taquicardia detectada](docs/img/dashboard.png)
+
+Dashboard individual com sinais vitais ao vivo (atualizados via WebSocket/STOMP),
+status clínico derivado dos limites, identificação do tópico MQTT consumido e
+do canal WebSocket que entrega os dados ao navegador. O painel direito mostra
+o histórico de alertas do paciente — neste caso, uma **Taquicardia** detectada
+5 segundos antes.
+
+### Lista de pacientes
+
+![Listagem de 3 pacientes monitorados com ações de abrir, editar e excluir](docs/img/pacientes.png)
+
+Cadastro dos pacientes monitorados, com contato de emergência por linha. As
+ações **Editar** e **Excluir** seguem a matriz de permissões: o cuidador só vê
+o ícone de abrir dashboard, o profissional vê editar, e apenas o administrador
+vê o botão de excluir.
+
+### Histórico de alertas clínicos
+
+![Lista de alertas com Taquicardia e Febre em severidade ALTA, ainda pendentes](docs/img/alertas.png)
+
+Alertas gerados pelas regras do backend, com paciente, tipo, valor medido,
+severidade, timestamp e status (pendente / atendido). A janela de
+deduplicação de 5 minutos evita ruído quando uma violação clínica persiste.
+
+### Painel do simulador IoT
+
+![Painel do simulador com 3 pacientes virtuais e botões para disparar eventos clínicos](docs/img/simulador.png)
+
+Substitui a camada de hardware (ESP32 ou similar) por um processo Node.js que
+publica em MQTT como se fosse um dispositivo real. Permite disparar
+taquicardia, baixa saturação, febre e queda em cada paciente — o evento atravessa
+broker → backend → banco → WebSocket → dashboard em poucos segundos.
 
 ---
 
