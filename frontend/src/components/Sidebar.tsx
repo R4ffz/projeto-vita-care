@@ -122,8 +122,8 @@ function Grupo({
 }: { titulo: string; itens: ItemNav[]; onNavegar: () => void }) {
   return (
     <div>
-      <div className="px-3 mb-2 text-[10px] font-mono uppercase tracking-[0.18em]
-                      text-vita-sidebar-muted">
+      <div className="px-3 mb-2 text-[10px] uppercase tracking-[0.16em]
+                      font-medium text-vita-sidebar-muted/80">
         {titulo}
       </div>
       <ul className="space-y-0.5">

@@ -37,3 +37,15 @@ export function formatarDataHora(iso: string): string {
     hour: '2-digit', minute: '2-digit',
   });
 }
+
+/**
+ * Saudação contextual com base na hora local.
+ * Faixas usadas em centros clínicos brasileiros: 5–11h dia, 12–17h tarde,
+ * 18–4h noite.
+ */
+export function saudacao(d: Date = new Date()): string {
+  const h = d.getHours();
+  if (h >= 5 && h < 12)  return 'Bom dia';
+  if (h >= 12 && h < 18) return 'Boa tarde';
+  return 'Boa noite';
+}
