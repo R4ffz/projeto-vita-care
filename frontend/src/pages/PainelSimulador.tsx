@@ -3,8 +3,11 @@ import {
   Activity, Droplets, Thermometer, AlertOctagon, RotateCcw, Cpu, Info,
 } from 'lucide-react';
 import { Card, CardBody, CardHeader, CardTitle } from '@/components/Card';
-import { perfisSimuladosMock, pacientesMock } from '@/lib/mocks';
+import { perfisSimuladosMock } from '@/lib/mocks';
+import { useAsync } from '@/lib/useAsync';
+import { pacientesService } from '@/services';
 import type { PerfilSimulado } from '@/types';
+import { useCallback } from 'react';
 
 const ROTULOS_PERFIL: Record<PerfilSimulado['perfil'], string> = {
   jovem_saudavel:    'Jovem saudável',
@@ -21,6 +24,8 @@ const ROTULOS_ESTADO: Record<PerfilSimulado['estado'], string> = {
 
 export function PainelSimulador() {
   const [perfis, setPerfis] = useState<PerfilSimulado[]>(perfisSimuladosMock);
+  const fetchPacientes = useCallback(() => pacientesService.listar(), []);
+  const { data: pacientes } = useAsync(fetchPacientes, []);
 
   const setEstado = (id: number, estado: PerfilSimulado['estado']) => {
     setPerfis(prev => prev.map(p => p.id === id ? { ...p, estado } : p));
@@ -39,14 +44,14 @@ export function PainelSimulador() {
             Aciona eventos no simulador para demonstração. A camada física foi substituída
             por um processo Node.js que publica MQTT como se fosse um ESP32. As ações abaixo
             ainda usam estado local — a chamada real ao endpoint <span className="font-mono">/sim/*</span> do
-            simulador entra no Prompt 12.
+            simulador entra no Prompt 15.
           </p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {perfis.map(perfil => {
-          const paciente = pacientesMock.find(p => p.id === perfil.id);
+          const paciente = pacientes?.find(p => p.id === perfil.id);
           return (
             <Card key={perfil.id}>
               <CardHeader>

@@ -41,12 +41,33 @@ export interface Alerta {
 }
 
 export interface LimiteConfig {
-  id: number;
   pacienteId: number;
   bpmMin: number;
   bpmMax: number;
   spo2Min: number;
   tempMax: number;
+}
+
+export interface PacienteRequest {
+  nome: string;
+  idade: number;
+  contatoEmergencia: string | null;
+  fotoUrl: string | null;
+}
+
+export interface LimiteConfigRequest {
+  bpmMin: number;
+  bpmMax: number;
+  spo2Min: number;
+  tempMax: number;
+}
+
+export interface ApiError {
+  status: number;
+  error: string;
+  message: string;
+  timestamp: string;
+  fields?: Record<string, string>;
 }
 
 export interface PerfilSimulado {

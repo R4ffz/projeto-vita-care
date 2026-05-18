@@ -1,10 +1,15 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid,
 } from 'recharts';
 import { Card, CardBody, CardHeader, CardTitle } from '@/components/Card';
-import { historicoMock, pacientesMock } from '@/lib/mocks';
+import { LoadingState } from '@/components/LoadingState';
+import { ErrorState } from '@/components/ErrorState';
+import { EmptyState } from '@/components/EmptyState';
+import { useAsync } from '@/lib/useAsync';
+import { pacientesService } from '@/services';
+import { historicoMock } from '@/lib/mocks';
 import { formatarHora } from '@/lib/format';
 
 type Periodo = '60min' | '24h' | '7d';
@@ -17,20 +22,27 @@ const PERIODOS: Array<{ value: Periodo; label: string; minutos: number }> = [
 
 export function HistoricoGrafico() {
   const [params, setParams] = useSearchParams();
-  const pacienteId = Number(params.get('paciente') ?? pacientesMock[0]!.id);
+  const fetcherPacientes = useCallback(() => pacientesService.listar(), []);
+  const pacientesQuery = useAsync(fetcherPacientes, []);
+
+  const idParam = params.get('paciente');
+  const pacientes = pacientesQuery.data ?? [];
+  const pacienteId = idParam ? Number(idParam) : pacientes[0]?.id ?? null;
+
   const periodo = (params.get('periodo') as Periodo) ?? '60min';
   const [periodoLocal, setPeriodoLocal] = useState<Periodo>(periodo);
-
   const periodoCfg = PERIODOS.find(p => p.value === periodoLocal) ?? PERIODOS[0]!;
-  const dados = useMemo(
-    () => historicoMock(pacienteId, periodoCfg.minutos).map(l => ({
+
+  const dados = useMemo(() => {
+    if (pacienteId == null) return [];
+    // Prompt 14 troca por leiturasService.historico(pacienteId, periodoCfg.minutos).
+    return historicoMock(pacienteId, periodoCfg.minutos).map(l => ({
       tempo: formatarHora(l.timestamp),
       bpm: l.bpm,
       spo2: l.spo2,
       temp: l.temperatura,
-    })),
-    [pacienteId, periodoCfg.minutos],
-  );
+    }));
+  }, [pacienteId, periodoCfg.minutos]);
 
   const setPaciente = (id: number) => {
     const next = new URLSearchParams(params);
@@ -51,15 +63,19 @@ export function HistoricoGrafico() {
         <CardBody className="flex flex-col md:flex-row md:items-end gap-4">
           <div className="flex-1">
             <label className="vita-label">Paciente</label>
-            <select
-              value={pacienteId}
-              onChange={(e) => setPaciente(Number(e.target.value))}
-              className="vita-input"
-            >
-              {pacientesMock.map(p => (
-                <option key={p.id} value={p.id}>{p.nome} (#{p.id})</option>
-              ))}
-            </select>
+            {pacientesQuery.loading && <LoadingState inline label="Carregando pacientes…" />}
+            {pacientesQuery.error && <ErrorState error={pacientesQuery.error} onRetry={pacientesQuery.reload} compact />}
+            {pacientes.length > 0 && pacienteId != null && (
+              <select
+                value={pacienteId}
+                onChange={(e) => setPaciente(Number(e.target.value))}
+                className="vita-input"
+              >
+                {pacientes.map(p => (
+                  <option key={p.id} value={p.id}>{p.nome} (#{p.id})</option>
+                ))}
+              </select>
+            )}
           </div>
           <div>
             <label className="vita-label">Período</label>
@@ -83,9 +99,26 @@ export function HistoricoGrafico() {
         </CardBody>
       </Card>
 
-      <GraficoCard titulo="Frequência cardíaca (bpm)" dataKey="bpm" cor="#0d9488" unidade="bpm" dados={dados} />
-      <GraficoCard titulo="Saturação de oxigênio (%)" dataKey="spo2" cor="#0ea5e9" unidade="%" dados={dados} />
-      <GraficoCard titulo="Temperatura corporal (°C)" dataKey="temp" cor="#f59e0b" unidade="°C" dados={dados} />
+      {pacientes.length === 0 && !pacientesQuery.loading && (
+        <Card><EmptyState titulo="Nenhum paciente cadastrado" /></Card>
+      )}
+
+      {pacienteId != null && (
+        <>
+          <NotaTransitoria />
+          <GraficoCard titulo="Frequência cardíaca (bpm)" dataKey="bpm" cor="#0d9488" unidade="bpm" dados={dados} />
+          <GraficoCard titulo="Saturação de oxigênio (%)" dataKey="spo2" cor="#0ea5e9" unidade="%" dados={dados} />
+          <GraficoCard titulo="Temperatura corporal (°C)" dataKey="temp" cor="#f59e0b" unidade="°C" dados={dados} />
+        </>
+      )}
+    </div>
+  );
+}
+
+function NotaTransitoria() {
+  return (
+    <div className="text-[11px] text-vita-muted font-mono px-1">
+      Dados do gráfico ainda sintéticos — a chamada a <span className="font-semibold">GET /api/pacientes/&#123;id&#125;/leituras</span> entra no Prompt 14.
     </div>
   );
 }

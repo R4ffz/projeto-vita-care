@@ -6,6 +6,7 @@ import { Central } from '@/pages/Central';
 import { Pacientes } from '@/pages/Pacientes';
 import { DashboardPaciente } from '@/pages/DashboardPaciente';
 import { CadastroPaciente } from '@/pages/CadastroPaciente';
+import { EdicaoPaciente } from '@/pages/EdicaoPaciente';
 import { HistoricoGrafico } from '@/pages/HistoricoGrafico';
 import { ListaAlertas } from '@/pages/ListaAlertas';
 import { ConfiguracaoLimites } from '@/pages/ConfiguracaoLimites';
@@ -29,6 +30,7 @@ export function AppRoutes() {
         <Route path="/pacientes"          element={<Pacientes />} />
         <Route path="/pacientes/novo"     element={<CadastroPaciente />} />
         <Route path="/pacientes/:id"      element={<DashboardPaciente />} />
+        <Route path="/pacientes/:id/editar" element={<EdicaoPaciente />} />
         <Route path="/historico"          element={<HistoricoGrafico />} />
         <Route path="/alertas"            element={<ListaAlertas />} />
         <Route path="/limites"            element={<ConfiguracaoLimites />} />

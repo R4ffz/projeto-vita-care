@@ -1,27 +1,64 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Check, ExternalLink, Filter } from 'lucide-react';
 import { Card, CardBody, CardHeader, CardTitle } from '@/components/Card';
 import { SeveridadeBadge } from '@/components/SeveridadeBadge';
-import { alertasMock, pacientesMock } from '@/lib/mocks';
+import { LoadingState } from '@/components/LoadingState';
+import { ErrorState } from '@/components/ErrorState';
+import { EmptyState } from '@/components/EmptyState';
+import { useAsync } from '@/lib/useAsync';
+import { alertasService, pacientesService } from '@/services';
+import { ServiceError } from '@/lib/api';
 import { formatarDataHora, formatarHoraRelativa, rotuloTipoAlerta } from '@/lib/format';
-import type { Alerta } from '@/types';
+import type { Alerta, Paciente } from '@/types';
+
+interface Dados {
+  alertas: Alerta[];
+  pacientesPorId: Map<number, Paciente>;
+}
+
+async function carregar(): Promise<Dados> {
+  const [alertas, pacientes] = await Promise.all([
+    alertasService.listarTodos(),
+    pacientesService.listar(),
+  ]);
+  return {
+    alertas,
+    pacientesPorId: new Map(pacientes.map(p => [p.id, p])),
+  };
+}
 
 export function ListaAlertas() {
+  const fetcher = useCallback(carregar, []);
+  const { data, loading, error, reload, setData } = useAsync(fetcher, []);
   const [soPendentes, setSoPendentes] = useState(false);
-  const [marcados, setMarcados] = useState<Set<number>>(new Set());
+  const [marcandoId, setMarcandoId] = useState<number | null>(null);
+  const [erroAcao, setErroAcao] = useState<ServiceError | null>(null);
 
-  const lista = alertasMock
-    .map(a => marcados.has(a.id) ? { ...a, atendido: true } : a)
-    .filter(a => !soPendentes || !a.atendido)
-    .sort((a, b) => b.timestamp.localeCompare(a.timestamp));
-
-  const marcar = (id: number) => {
-    setMarcados(prev => new Set(prev).add(id));
+  const marcar = async (a: Alerta) => {
+    setMarcandoId(a.id);
+    setErroAcao(null);
+    try {
+      const atualizado = await alertasService.marcarAtendido(a.id);
+      setData((prev) => {
+        if (!prev) return { alertas: [atualizado], pacientesPorId: new Map() };
+        return {
+          ...prev,
+          alertas: prev.alertas.map(x => x.id === atualizado.id ? atualizado : x),
+        };
+      });
+    } catch (e) {
+      if (e instanceof ServiceError) setErroAcao(e);
+      else throw e;
+    } finally {
+      setMarcandoId(null);
+    }
   };
 
   return (
     <div className="space-y-4">
+      {erroAcao && <ErrorState error={erroAcao} />}
+
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between flex-wrap gap-3">
@@ -42,40 +79,60 @@ export function ListaAlertas() {
           </div>
         </CardHeader>
         <CardBody className="p-0">
-          {lista.length === 0 ? (
-            <div className="px-5 py-10 text-center text-sm text-vita-muted">
-              Nenhum alerta para os filtros atuais.
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-vita-bg/50 border-b border-vita-border text-left">
-                  <tr className="text-[11px] font-mono uppercase tracking-wider text-vita-muted">
-                    <th className="px-5 py-3">Paciente</th>
-                    <th className="px-5 py-3">Tipo</th>
-                    <th className="px-5 py-3">Valor medido</th>
-                    <th className="px-5 py-3">Severidade</th>
-                    <th className="px-5 py-3">Quando</th>
-                    <th className="px-5 py-3">Status</th>
-                    <th className="px-5 py-3"></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-vita-border">
-                  {lista.map(a => (
-                    <Linha key={a.id} alerta={a} marcar={() => marcar(a.id)} />
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+          {loading && <LoadingState label="Carregando alertas…" />}
+          {error && <ErrorState error={error} onRetry={reload} />}
+          {data && (() => {
+            const lista = data.alertas
+              .filter(a => !soPendentes || !a.atendido)
+              .sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+
+            if (lista.length === 0) {
+              return (
+                <EmptyState
+                  titulo="Nenhum alerta para os filtros atuais"
+                  descricao={soPendentes ? 'Todos os alertas foram atendidos.' : 'Nada foi disparado pelo sistema ainda.'}
+                />
+              );
+            }
+
+            return (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-vita-bg/50 border-b border-vita-border text-left">
+                    <tr className="text-[11px] font-mono uppercase tracking-wider text-vita-muted">
+                      <th className="px-5 py-3">Paciente</th>
+                      <th className="px-5 py-3">Tipo</th>
+                      <th className="px-5 py-3">Valor medido</th>
+                      <th className="px-5 py-3">Severidade</th>
+                      <th className="px-5 py-3">Quando</th>
+                      <th className="px-5 py-3">Status</th>
+                      <th className="px-5 py-3"></th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-vita-border">
+                    {lista.map(a => (
+                      <Linha
+                        key={a.id}
+                        alerta={a}
+                        paciente={data.pacientesPorId.get(a.pacienteId)}
+                        marcando={marcandoId === a.id}
+                        marcar={() => marcar(a)}
+                      />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            );
+          })()}
         </CardBody>
       </Card>
     </div>
   );
 }
 
-function Linha({ alerta, marcar }: { alerta: Alerta; marcar: () => void }) {
-  const paciente = pacientesMock.find(p => p.id === alerta.pacienteId);
+function Linha({
+  alerta, paciente, marcando, marcar,
+}: { alerta: Alerta; paciente: Paciente | undefined; marcando: boolean; marcar: () => void }) {
   const critico = alerta.severidade === 'CRITICA' && !alerta.atendido;
 
   return (
@@ -102,8 +159,8 @@ function Linha({ alerta, marcar }: { alerta: Alerta; marcar: () => void }) {
       </td>
       <td className="px-5 py-3 text-right">
         {!alerta.atendido && (
-          <button onClick={marcar} className="vita-btn-ghost">
-            <Check className="h-4 w-4" /> Marcar atendido
+          <button onClick={marcar} disabled={marcando} className="vita-btn-ghost">
+            <Check className="h-4 w-4" /> {marcando ? 'Marcando…' : 'Marcar atendido'}
           </button>
         )}
       </td>

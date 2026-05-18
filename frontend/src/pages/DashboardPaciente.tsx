@@ -1,39 +1,75 @@
+import { useCallback, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   Heart, Droplets, Thermometer, Phone, ArrowLeft, LineChart, SlidersHorizontal,
+  Pencil, Trash2,
 } from 'lucide-react';
-import {
-  pacientesMock, ultimaLeituraMock, statusMock, alertasMock, limitesMock,
-} from '@/lib/mocks';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/Card';
 import { SinalCard } from '@/components/SinalCard';
 import { StatusDot } from '@/components/StatusDot';
 import { SeveridadeBadge } from '@/components/SeveridadeBadge';
+import { LoadingState } from '@/components/LoadingState';
+import { ErrorState } from '@/components/ErrorState';
+import { EmptyState } from '@/components/EmptyState';
+import { useAsync } from '@/lib/useAsync';
+import { derivarStatus } from '@/lib/status';
+import { ServiceError } from '@/lib/api';
+import {
+  pacientesService, leiturasService, alertasService, limitesService,
+} from '@/services';
+import type { Alerta, Leitura, LimiteConfig, Paciente } from '@/types';
 import { formatarHoraRelativa, rotuloTipoAlerta } from '@/lib/format';
+
+interface DadosPaciente {
+  paciente: Paciente;
+  leitura: Leitura | null;
+  limites: LimiteConfig | null;
+  alertas: Alerta[];
+}
 
 export function DashboardPaciente() {
   const { id } = useParams();
-  const navigate = useNavigate();
   const pacienteId = Number(id);
-  const paciente = pacientesMock.find(p => p.id === pacienteId);
+  const navigate = useNavigate();
+  const [excluindo, setExcluindo] = useState(false);
+  const [erroExcluir, setErroExcluir] = useState<ServiceError | null>(null);
 
-  if (!paciente) {
-    return (
-      <div className="vita-card px-5 py-8 text-center">
-        <p className="text-sm text-vita-muted">Paciente não encontrado.</p>
-        <button onClick={() => navigate('/central')} className="vita-btn-secondary mt-4">
-          Voltar para a Central
-        </button>
-      </div>
-    );
-  }
+  const fetcher = useCallback(async (): Promise<DadosPaciente> => {
+    const [paciente, leitura, limites, alertas] = await Promise.all([
+      pacientesService.buscar(pacienteId),
+      leiturasService.ultima(pacienteId, 5).catch(() => null),
+      limitesService.buscar(pacienteId).catch(() => null),
+      alertasService.listarPorPaciente(pacienteId).catch(() => []),
+    ]);
+    return { paciente, leitura, limites, alertas };
+  }, [pacienteId]);
 
-  const leitura = ultimaLeituraMock[paciente.id];
-  const status  = statusMock[paciente.id] ?? 'offline';
-  const limites = limitesMock[paciente.id];
-  const alertasDoPaciente = alertasMock
-    .filter(a => a.pacienteId === paciente.id)
-    .slice(0, 5);
+  const { data, loading, error, reload } = useAsync(fetcher, [pacienteId]);
+
+  const excluir = async () => {
+    if (!data) return;
+    const ok = window.confirm(`Excluir "${data.paciente.nome}"? Ação irreversível.`);
+    if (!ok) return;
+    setExcluindo(true);
+    setErroExcluir(null);
+    try {
+      await pacientesService.excluir(pacienteId);
+      navigate('/central', { replace: true });
+    } catch (e) {
+      if (e instanceof ServiceError) setErroExcluir(e);
+      else throw e;
+    } finally {
+      setExcluindo(false);
+    }
+  };
+
+  if (loading) return <LoadingState label="Carregando paciente…" />;
+  if (error)   return <ErrorState error={error} onRetry={reload} />;
+  if (!data)   return null;
+
+  const { paciente, leitura, limites, alertas } = data;
+  const status = derivarStatus(leitura, limites);
+  const alertasRecentes = alertas.slice(0, 5);
 
   return (
     <div className="space-y-6">
@@ -41,7 +77,8 @@ export function DashboardPaciente() {
         <ArrowLeft className="h-4 w-4" /> Central
       </Link>
 
-      {/* Cabeçalho do paciente */}
+      {erroExcluir && <ErrorState error={erroExcluir} />}
+
       <div className="vita-card px-6 py-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <div className="flex items-center gap-3 flex-wrap">
@@ -63,62 +100,60 @@ export function DashboardPaciente() {
             <LineChart className="h-4 w-4" /> Histórico
           </Link>
           <Link to={`/limites?paciente=${paciente.id}`} className="vita-btn-secondary">
-            <SlidersHorizontal className="h-4 w-4" /> Ajustar limites
+            <SlidersHorizontal className="h-4 w-4" /> Limites
           </Link>
+          <Link to={`/pacientes/${paciente.id}/editar`} className="vita-btn-secondary">
+            <Pencil className="h-4 w-4" /> Editar
+          </Link>
+          <button onClick={excluir} disabled={excluindo}
+                  className="vita-btn-secondary text-rose-700 border-rose-200 hover:bg-rose-50">
+            <Trash2 className="h-4 w-4" /> {excluindo ? 'Excluindo…' : 'Excluir'}
+          </button>
         </div>
       </div>
 
-      {/* Sinais vitais */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <SinalCard
-          icon={Heart}
-          label="Frequência cardíaca"
-          unidade="bpm"
-          valor={leitura?.bpm ?? null}
+          icon={Heart}        label="Frequência cardíaca" unidade="bpm"
+          valor={leitura?.bpm ?? null} status={status}
           faixa={limites ? `normal ${limites.bpmMin}–${limites.bpmMax}` : undefined}
-          status={status}
         />
         <SinalCard
-          icon={Droplets}
-          label="Saturação SpO₂"
-          unidade="%"
-          valor={leitura?.spo2 ?? null}
+          icon={Droplets}     label="Saturação SpO₂" unidade="%"
+          valor={leitura?.spo2 ?? null} status={status}
           faixa={limites ? `mínimo ${limites.spo2Min}` : undefined}
-          status={status}
         />
         <SinalCard
-          icon={Thermometer}
-          label="Temperatura"
-          unidade="°C"
-          valor={leitura?.temperatura ?? null}
-          casas={1}
-          faixa={limites ? `máximo ${limites.tempMax.toFixed(1)}` : undefined}
+          icon={Thermometer}  label="Temperatura" unidade="°C" casas={1}
+          valor={leitura?.temperatura != null ? Number(leitura.temperatura) : null}
           status={status}
+          faixa={limites ? `máximo ${Number(limites.tempMax).toFixed(1)}` : undefined}
         />
       </div>
 
-      {/* Última atualização + alertas recentes */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-4">
         <Card>
           <CardHeader><CardTitle hint="Telemetria">Status da conexão</CardTitle></CardHeader>
           <CardBody className="space-y-3">
-            <Linha rotulo="Dispositivo"   valor="IoT virtual" />
-            <Linha rotulo="Última leitura" valor={leitura ? formatarHoraRelativa(leitura.timestamp) : '—'} />
-            <Linha rotulo="Tópico MQTT"   valor={`pacientes/${paciente.id}/sinais`} mono />
-            <Linha rotulo="Canal WS"      valor={`/topic/pacientes/${paciente.id}/leituras`} mono />
+            <Linha rotulo="Dispositivo"    valor="IoT virtual" />
+            <Linha rotulo="Última leitura" valor={leitura ? formatarHoraRelativa(leitura.timestamp) : 'sem leitura recente'} />
+            <Linha rotulo="Tópico MQTT"    valor={`pacientes/${paciente.id}/sinais`} mono />
+            <Linha rotulo="Canal WS"       valor={`/topic/pacientes/${paciente.id}/leituras`} mono />
           </CardBody>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle hint="Últimos 5 eventos">Alertas recentes</CardTitle>
+            <CardTitle hint={alertas.length > 0 ? `${alertas.length} no histórico` : 'sem registros'}>
+              Alertas recentes
+            </CardTitle>
           </CardHeader>
-          <CardBody>
-            {alertasDoPaciente.length === 0 ? (
-              <p className="text-sm text-vita-muted">Sem alertas registrados.</p>
+          <CardBody className="p-0">
+            {alertasRecentes.length === 0 ? (
+              <EmptyState titulo="Sem alertas registrados" descricao="Tudo dentro dos limites configurados." />
             ) : (
-              <ul className="divide-y divide-vita-border -mx-5">
-                {alertasDoPaciente.map(a => (
+              <ul className="divide-y divide-vita-border">
+                {alertasRecentes.map(a => (
                   <li key={a.id} className="px-5 py-3 flex items-center justify-between gap-3">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
@@ -128,7 +163,7 @@ export function DashboardPaciente() {
                         </span>
                       </div>
                       <div className="mt-0.5 text-xs text-vita-muted font-mono">
-                        valor {a.valorMedido} · {formatarHoraRelativa(a.timestamp)}
+                        valor {a.valorMedido ?? '—'} · {formatarHoraRelativa(a.timestamp)}
                         {a.atendido && ' · atendido'}
                       </div>
                     </div>
