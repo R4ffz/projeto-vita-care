@@ -328,13 +328,20 @@ function BlocoTecnico() {
   return (
     <div className="vita-card px-5 py-4 flex items-start gap-3">
       <Info className="h-4 w-4 mt-0.5 text-vita-primary shrink-0" />
-      <div className="text-xs text-vita-muted leading-relaxed">
-        <div className="font-medium text-vita-text mb-1">Fluxo do clique até o dashboard</div>
-        Painel → <span className="font-mono">POST /sim/&#123;id&#125;/&lt;evento&gt;</span> no simulador →
-        publicação MQTT em <span className="font-mono">pacientes/&#123;id&#125;/&#123;sinais|queda&#125;</span> →
-        backend Spring consome via Eclipse Paho → persiste em PostgreSQL →
-        avalia regras de alerta → publica em <span className="font-mono">/topic/pacientes/&#123;id&#125;/leituras</span>{' '}
-        e <span className="font-mono">/topic/alertas</span> → Dashboard do paciente atualiza em tempo real (Prompt 13).
+      <div className="text-xs text-vita-muted leading-relaxed space-y-2">
+        <div>
+          <div className="font-medium text-vita-text mb-1">Fluxo do clique até o dashboard</div>
+          Painel → <span className="font-mono">POST /sim/&#123;id&#125;/&lt;evento&gt;</span> no simulador →
+          publicação MQTT em <span className="font-mono">pacientes/&#123;id&#125;/&#123;sinais|queda&#125;</span> →
+          backend Spring consome via Eclipse Paho → persiste em PostgreSQL →
+          avalia regras de alerta → publica em <span className="font-mono">/topic/pacientes/&#123;id&#125;/leituras</span>{' '}
+          e <span className="font-mono">/topic/alertas</span> → Dashboard do paciente atualiza em tempo real.
+        </div>
+        <div className="text-vita-muted/90">
+          <span className="font-medium text-vita-text">Dedup:</span> alertas idênticos
+          consecutivos para o mesmo paciente são deduplicados em janela de <span className="font-mono">5 minutos</span>.
+          Se você disparar o mesmo evento duas vezes seguidas, o segundo não gera novo alerta.
+        </div>
       </div>
     </div>
   );

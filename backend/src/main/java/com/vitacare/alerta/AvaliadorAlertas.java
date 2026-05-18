@@ -80,7 +80,7 @@ public class AvaliadorAlertas {
 
     private void criar(Long pacienteId, TipoAlerta tipo, BigDecimal valor, Severidade severidade, Instant ts) {
         if (recente(pacienteId, tipo, ts)) {
-            log.debug("Alerta {} para paciente {} suprimido (janela de deduplicação de {} min)",
+            log.info("Alerta {} para paciente {} suprimido (dedup de {} min, ainda dentro da janela)",
                     tipo, pacienteId, JANELA_DEDUP.toMinutes());
             return;
         }
