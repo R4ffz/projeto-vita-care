@@ -1,10 +1,10 @@
 import type { Severidade } from '@/types';
 
 const CLASSES: Record<Severidade, string> = {
-  BAIXA:   'bg-slate-100 text-slate-700 border-slate-200',
-  MEDIA:   'bg-amber-50 text-amber-800 border-amber-200',
-  ALTA:    'bg-orange-50 text-orange-800 border-orange-200',
-  CRITICA: 'bg-rose-50 text-rose-800 border-rose-200',
+  BAIXA:   'bg-vita-surface-elev text-vita-muted border-vita-border-strong',
+  MEDIA:   'bg-vita-warn-soft text-vita-warn border-vita-warn/30',
+  ALTA:    'bg-vita-warn-soft text-vita-warn border-vita-warn/45',
+  CRITICA: 'bg-vita-crit-soft text-vita-crit border-vita-crit/40',
 };
 
 const ROTULO: Record<Severidade, string> = {

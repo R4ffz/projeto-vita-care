@@ -40,6 +40,7 @@ public class PacienteController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN','PROFISSIONAL')")
     public ResponseEntity<PacienteResponse> criar(@Valid @RequestBody PacienteRequest req) {
         PacienteResponse criado = service.criar(req);
         return ResponseEntity
@@ -48,6 +49,7 @@ public class PacienteController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','PROFISSIONAL')")
     public PacienteResponse atualizar(@PathVariable Long id,
                                       @Valid @RequestBody PacienteRequest req) {
         return service.atualizar(id, req);

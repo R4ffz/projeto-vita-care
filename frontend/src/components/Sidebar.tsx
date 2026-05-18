@@ -1,12 +1,13 @@
 import { NavLink } from 'react-router-dom';
 import {
-  Activity, Users, UserPlus, LineChart, BellRing, SlidersHorizontal, Cpu, X,
+  HeartPulse, Users, UserPlus, Activity, BellRing, SlidersHorizontal, RadioTower, X,
 } from 'lucide-react';
 import type { ComponentType } from 'react';
 import { useAuth } from '@/auth/AuthContext';
 import type { Perfil } from '@/types';
 import { Logo } from './Logo';
 import { Avatar } from './Avatar';
+import { Sparkline } from './Sparkline';
 
 interface ItemNav {
   to: string;
@@ -14,20 +15,17 @@ interface ItemNav {
   icon: ComponentType<{ className?: string }>;
 }
 
-const NAV_PRINCIPAL: ItemNav[] = [
-  { to: '/central',   label: 'Central',         icon: Activity },
-  { to: '/pacientes', label: 'Pacientes',       icon: Users },
-  { to: '/alertas',   label: 'Alertas',         icon: BellRing },
+const NAV_CUIDADO: ItemNav[] = [
+  { to: '/central',   label: 'Central',   icon: HeartPulse },
+  { to: '/pacientes', label: 'Pacientes', icon: Users },
+  { to: '/alertas',   label: 'Alertas',   icon: BellRing },
 ];
 
-const NAV_GESTAO: ItemNav[] = [
+const NAV_FERRAMENTAS: ItemNav[] = [
   { to: '/pacientes/novo', label: 'Cadastrar paciente', icon: UserPlus },
-  { to: '/historico',      label: 'Histórico gráfico',  icon: LineChart },
+  { to: '/historico',      label: 'Histórico clínico',  icon: Activity },
   { to: '/limites',        label: 'Limites clínicos',   icon: SlidersHorizontal },
-];
-
-const NAV_SISTEMA: ItemNav[] = [
-  { to: '/simulador', label: 'Painel do simulador', icon: Cpu },
+  { to: '/simulador',      label: 'Dispositivos IoT',   icon: RadioTower },
 ];
 
 const ROTULO_PERFIL: Record<Perfil, string> = {
@@ -50,7 +48,7 @@ export function Sidebar({ aberta, fechar }: Props) {
         onClick={fechar}
         aria-hidden
         className={[
-          'fixed inset-0 z-30 bg-vita-text/40 backdrop-blur-sm lg:hidden transition-opacity',
+          'fixed inset-0 z-30 bg-black/60 backdrop-blur-sm lg:hidden transition-opacity',
           aberta ? 'opacity-100' : 'opacity-0 pointer-events-none',
         ].join(' ')}
       />
@@ -67,28 +65,30 @@ export function Sidebar({ aberta, fechar }: Props) {
         ].join(' ')}
         aria-label="Navegação principal"
       >
-        <div className="px-5 py-5 border-b border-vita-border flex items-center justify-between">
+        <div className="px-5 py-5 flex items-center justify-between">
           <Logo />
           <button
             onClick={fechar}
             className="lg:hidden text-vita-muted hover:text-vita-text p-1.5 -mr-1.5
-                       rounded-md hover:bg-white transition"
+                       rounded-md hover:bg-vita-sidebar-hover transition"
             aria-label="Fechar menu"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
-        {/* Cartão do usuário logado — humaniza a sidebar */}
         {usuario && (
-          <div className="px-4 py-4 border-b border-vita-border">
-            <div className="flex items-center gap-3">
-              <Avatar nome={usuario.nome} size="md" tone="sage" />
+          <div className="px-5 pb-4">
+            <div className="text-[10.5px] uppercase tracking-[0.18em] text-vita-sidebar-muted mb-2.5">
+              Plantão atual
+            </div>
+            <div className="flex items-center gap-2.5">
+              <Avatar nome={usuario.nome} size="sm" tone="sage" />
               <div className="min-w-0 flex-1">
-                <div className="text-sm font-medium text-vita-text truncate">
+                <div className="text-[13px] font-medium text-vita-text truncate leading-tight">
                   {usuario.nome}
                 </div>
-                <div className="text-[11px] text-vita-muted truncate">
+                <div className="text-[11px] text-vita-sidebar-muted truncate leading-tight mt-0.5">
                   {ROTULO_PERFIL[usuario.perfil]}
                 </div>
               </div>
@@ -96,20 +96,36 @@ export function Sidebar({ aberta, fechar }: Props) {
           </div>
         )}
 
-        <nav className="flex-1 overflow-y-auto px-3 py-5 space-y-6">
-          <Grupo titulo="Monitoramento" itens={NAV_PRINCIPAL} onNavegar={fechar} />
-          <Grupo titulo="Gestão"        itens={NAV_GESTAO}    onNavegar={fechar} />
-          <Grupo titulo="Sistema"       itens={NAV_SISTEMA}   onNavegar={fechar} />
+        <nav className="flex-1 overflow-y-auto px-3 pt-2 pb-4 space-y-4">
+          <ul className="space-y-0.5">
+            {NAV_CUIDADO.map(it => <ItemMenu key={it.to} item={it} onNavegar={fechar} ehCentral={it.to === '/central'} />)}
+          </ul>
+          <div className="mx-3 h-px bg-vita-border-strong/60" />
+          <ul className="space-y-0.5">
+            {NAV_FERRAMENTAS.map(it => <ItemMenu key={it.to} item={it} onNavegar={fechar} />)}
+          </ul>
         </nav>
 
-        {/* Rodapé neutro — sem refs acadêmicas. */}
+        {/* Indicador "Recebendo leituras" — mais vivo, com mini-sparkline neon */}
         <div className="px-5 py-4 border-t border-vita-border">
-          <div className="flex items-center gap-2 text-[11px] text-vita-muted">
-            <span className="relative inline-flex h-1.5 w-1.5">
-              <span className="absolute inline-flex h-full w-full rounded-full bg-vita-ok opacity-60 animate-ping" />
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-vita-ok" />
+          <div className="flex items-center gap-2.5">
+            <span className="vita-pulse-dot text-vita-ok" />
+            <div className="flex-1 min-w-0">
+              <div className="text-[12px] font-medium text-vita-text/90 leading-tight">
+                Recebendo leituras
+              </div>
+              <div className="text-[10px] text-vita-sidebar-muted leading-tight mt-0.5">
+                Telemetria ativa
+              </div>
+            </div>
+            <span className="text-vita-ok shrink-0">
+              <Sparkline
+                valores={[58, 62, 60, 65, 63, 68, 64, 67, 66, 70]}
+                width={42}
+                height={16}
+                strokeWidth={1.2}
+              />
             </span>
-            <span>Telemetria ativa</span>
           </div>
         </div>
       </aside>
@@ -117,46 +133,34 @@ export function Sidebar({ aberta, fechar }: Props) {
   );
 }
 
-function Grupo({
-  titulo, itens, onNavegar,
-}: { titulo: string; itens: ItemNav[]; onNavegar: () => void }) {
+function ItemMenu({
+  item, onNavegar, ehCentral = false,
+}: { item: ItemNav; onNavegar: () => void; ehCentral?: boolean }) {
   return (
-    <div>
-      <div className="px-3 mb-2 text-[10px] uppercase tracking-[0.16em]
-                      font-medium text-vita-sidebar-muted/80">
-        {titulo}
-      </div>
-      <ul className="space-y-0.5">
-        {itens.map((it) => (
-          <li key={it.to}>
-            <NavLink
-              to={it.to}
-              end={it.to === '/central'}
-              onClick={onNavegar}
-              className={({ isActive }) =>
-                [
-                  'flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition relative',
-                  isActive
-                    ? 'bg-vita-primary-soft text-vita-primary-strong font-medium'
-                    : 'text-vita-sidebar-fg hover:bg-white hover:text-vita-text',
-                ].join(' ')
-              }
-            >
-              {({ isActive }) => (
-                <>
-                  {isActive && (
-                    <span aria-hidden
-                          className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-r-full
-                                     bg-vita-primary" />
-                  )}
-                  <it.icon className="h-4 w-4 shrink-0" />
-                  <span>{it.label}</span>
-                </>
-              )}
-            </NavLink>
-          </li>
-        ))}
-      </ul>
-    </div>
+    <li>
+      <NavLink
+        to={item.to}
+        end={item.to === '/central'}
+        onClick={onNavegar}
+        className={({ isActive }) =>
+          [
+            'flex items-center gap-3 px-3 py-2 rounded-lg text-[14px] transition',
+            isActive
+              ? 'bg-vita-primary text-vita-bg font-medium shadow-glow'
+              : 'text-vita-sidebar-fg hover:bg-vita-sidebar-hover hover:text-vita-text',
+          ].join(' ')
+        }
+      >
+        {({ isActive }) => (
+          <>
+            <item.icon className={`h-[18px] w-[18px] shrink-0 ${isActive ? 'text-vita-bg' : 'text-vita-sidebar-muted'}`} />
+            <span className="truncate">{item.label}</span>
+            {ehCentral && !isActive && (
+              <span aria-hidden className="ml-auto vita-pulse-dot text-vita-ok scale-75" />
+            )}
+          </>
+        )}
+      </NavLink>
+    </li>
   );
 }

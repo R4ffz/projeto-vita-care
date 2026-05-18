@@ -6,6 +6,8 @@ import { LoadingState } from '@/components/LoadingState';
 import { ErrorState } from '@/components/ErrorState';
 import { EmptyState } from '@/components/EmptyState';
 import { useAsync } from '@/lib/useAsync';
+import { useAuth } from '@/auth/AuthContext';
+import { temPermissao } from '@/auth/permissoes';
 import { pacientesService } from '@/services';
 import { ServiceError } from '@/lib/api';
 import type { Paciente } from '@/types';
@@ -13,6 +15,11 @@ import type { Paciente } from '@/types';
 export function Pacientes() {
   const fetcher = useCallback(() => pacientesService.listar(), []);
   const { data, loading, error, reload, setData } = useAsync(fetcher, []);
+
+  const { usuario } = useAuth();
+  const podeCriar    = temPermissao(usuario, 'paciente.criar');
+  const podeEditar   = temPermissao(usuario, 'paciente.editar');
+  const podeExcluir  = temPermissao(usuario, 'paciente.excluir');
 
   const [excluindoId, setExcluindoId] = useState<number | null>(null);
   const [erroExcluir, setErroExcluir] = useState<ServiceError | null>(null);
@@ -46,9 +53,11 @@ export function Pacientes() {
             <CardTitle hint={data ? `${data.length} pacientes monitorados` : ' '}>
               Pacientes
             </CardTitle>
-            <Link to="/pacientes/novo" className="vita-btn-primary">
-              <UserPlus className="h-4 w-4" /> Cadastrar
-            </Link>
+            {podeCriar && (
+              <Link to="/pacientes/novo" className="vita-btn-primary">
+                <UserPlus className="h-4 w-4" /> Cadastrar
+              </Link>
+            )}
           </div>
         </CardHeader>
         <CardBody className="p-0">
@@ -57,12 +66,14 @@ export function Pacientes() {
           {data && data.length === 0 && (
             <EmptyState
               titulo="Nenhum paciente cadastrado"
-              descricao="Cadastre o primeiro paciente para começar."
-              acao={
+              descricao={podeCriar
+                ? 'Cadastre o primeiro paciente para começar.'
+                : 'Aguarde um profissional cadastrar pacientes para acompanhar.'}
+              acao={podeCriar ? (
                 <Link to="/pacientes/novo" className="vita-btn-primary">
                   <UserPlus className="h-4 w-4" /> Cadastrar
                 </Link>
-              }
+              ) : undefined}
             />
           )}
           {data && data.length > 0 && (
@@ -83,18 +94,22 @@ export function Pacientes() {
                     <Link to={`/pacientes/${p.id}`} className="vita-btn-ghost" title="Abrir dashboard">
                       <ExternalLink className="h-4 w-4" />
                     </Link>
-                    <Link to={`/pacientes/${p.id}/editar`} className="vita-btn-ghost" title="Editar">
-                      <Pencil className="h-4 w-4" />
-                    </Link>
-                    <button
-                      onClick={() => excluir(p)}
-                      disabled={excluindoId === p.id}
-                      className="vita-btn-ghost text-rose-700 hover:text-rose-800 hover:bg-rose-50
-                                 disabled:opacity-50"
-                      title="Excluir"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    {podeEditar && (
+                      <Link to={`/pacientes/${p.id}/editar`} className="vita-btn-ghost" title="Editar">
+                        <Pencil className="h-4 w-4" />
+                      </Link>
+                    )}
+                    {podeExcluir && (
+                      <button
+                        onClick={() => excluir(p)}
+                        disabled={excluindoId === p.id}
+                        className="vita-btn-ghost text-vita-crit hover:text-vita-crit hover:bg-vita-crit-soft
+                                   disabled:opacity-50"
+                        title="Excluir"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    )}
                   </div>
                 </li>
               ))}

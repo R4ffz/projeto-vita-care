@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
-import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 import { Footer } from './Footer';
 
@@ -22,34 +21,24 @@ export function Layout() {
   const titulo = item?.titulo ?? 'VitaCare IoT';
   const subtitulo = item?.subtitulo;
 
-  // Drawer mobile da sidebar.
-  const [menuAberto, setMenuAberto] = useState(false);
-  // Fecha o drawer sempre que a rota muda (segurança extra além do onClick do NavLink).
-  useEffect(() => { setMenuAberto(false); }, [pathname]);
-
-  // Título da aba acompanha a rota — sensação de aplicação real, não SPA genérica.
+  // Título da aba acompanha a rota.
   useEffect(() => {
     document.title = `${titulo} · VitaCare IoT`;
   }, [titulo]);
 
   return (
-    <div className="h-full flex bg-vita-bg">
-      <Sidebar aberta={menuAberto} fechar={() => setMenuAberto(false)} />
-      <div className="flex-1 min-w-0 flex flex-col">
-        <Topbar
-          titulo={titulo}
-          subtitulo={subtitulo}
-          onAbrirMenu={() => setMenuAberto(true)}
-        />
-        {/* Textura ECG sutilíssima — dá "ambient" de monitor clínico
-            sem competir com o conteúdo. */}
-        <main className="flex-1 overflow-y-auto vita-ecg-bg">
-          <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-5 sm:py-6">
-            <Outlet />
-          </div>
-        </main>
-        <Footer />
-      </div>
+    <div className="min-h-full flex flex-col bg-vita-bg">
+      <Topbar titulo={titulo} subtitulo={subtitulo} />
+      <main className="flex-1 overflow-y-auto bg-vita-bg relative">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-6 sm:py-8 relative z-10">
+          <Outlet />
+        </div>
+        {/* Fita ECG animada — fixa no rodapé do main, sensação de monitor vivo */}
+        <div aria-hidden
+             className="pointer-events-none absolute inset-x-0 bottom-0 h-[90px]
+                        vita-ecg-live opacity-60" />
+      </main>
+      <Footer />
     </div>
   );
 }

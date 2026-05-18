@@ -28,12 +28,12 @@ export function SimuladorBadge({ variant = 'compact' }: Props) {
     <span
       title="Fonte dos dados: dispositivo IoT virtual (simulador). Ver rodapé para detalhes."
       className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full
-                 border border-vita-border bg-white
-                 text-[11px] font-medium text-vita-muted
-                 hover:text-vita-text transition"
+                 border border-vita-border-strong bg-vita-surface
+                 text-[12px] font-medium text-vita-muted
+                 hover:text-vita-text hover:border-vita-primary/40 transition"
     >
       <CircuitBoard className="h-3.5 w-3.5 text-vita-primary" />
-      <span className="font-mono uppercase tracking-wide">IoT virtual</span>
+      <span>IoT virtual</span>
     </span>
   );
 }

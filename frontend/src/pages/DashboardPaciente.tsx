@@ -14,6 +14,8 @@ import { EmptyState } from '@/components/EmptyState';
 import { LiveStatus } from '@/components/LiveStatus';
 import { EmergencyModal } from '@/components/EmergencyModal';
 import { useAsync } from '@/lib/useAsync';
+import { useAuth } from '@/auth/AuthContext';
+import { temPermissao } from '@/auth/permissoes';
 import { useDashboardRealtime } from '@/lib/useDashboardRealtime';
 import { useTickInterval } from '@/lib/useTickInterval';
 import { derivarStatus } from '@/lib/status';
@@ -35,6 +37,10 @@ export function DashboardPaciente() {
   const { id } = useParams();
   const pacienteId = Number(id);
   const navigate = useNavigate();
+  const { usuario } = useAuth();
+  const podeEditar          = temPermissao(usuario, 'paciente.editar');
+  const podeExcluir         = temPermissao(usuario, 'paciente.excluir');
+  const podeConfigurarLimites = temPermissao(usuario, 'limites.configurar');
 
   // ─── Carga inicial via REST ───────────────────────────────────────────────
   const fetcher = useCallback(async (): Promise<DadosPaciente> => {
@@ -184,16 +190,23 @@ export function DashboardPaciente() {
           <Link to={`/historico?paciente=${paciente.id}`} className="vita-btn-secondary">
             <LineChart className="h-4 w-4" /> Histórico
           </Link>
-          <Link to={`/limites?paciente=${paciente.id}`} className="vita-btn-secondary">
-            <SlidersHorizontal className="h-4 w-4" /> Limites
-          </Link>
-          <Link to={`/pacientes/${paciente.id}/editar`} className="vita-btn-secondary">
-            <Pencil className="h-4 w-4" /> Editar
-          </Link>
-          <button onClick={excluir} disabled={excluindo}
-                  className="vita-btn-secondary text-rose-700 border-rose-200 hover:bg-rose-50">
-            <Trash2 className="h-4 w-4" /> {excluindo ? 'Excluindo…' : 'Excluir'}
-          </button>
+          {podeConfigurarLimites && (
+            <Link to={`/limites?paciente=${paciente.id}`} className="vita-btn-secondary">
+              <SlidersHorizontal className="h-4 w-4" /> Limites
+            </Link>
+          )}
+          {podeEditar && (
+            <Link to={`/pacientes/${paciente.id}/editar`} className="vita-btn-secondary">
+              <Pencil className="h-4 w-4" /> Editar
+            </Link>
+          )}
+          {podeExcluir && (
+            <button onClick={excluir} disabled={excluindo}
+                    className="vita-btn-secondary text-vita-crit border-vita-crit/40
+                               hover:bg-vita-crit-soft hover:border-vita-crit/50">
+              <Trash2 className="h-4 w-4" /> {excluindo ? 'Excluindo…' : 'Excluir'}
+            </button>
+          )}
         </div>
       </div>
 

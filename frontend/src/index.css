@@ -7,82 +7,143 @@
     height: 100%;
   }
   body {
-    /* Stylistic alternates do Inter: '1' sem serifa, 'a' tabular, etc. */
-    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    /* Geist tem features estilísticas; ss01 ajusta o '1' tabular. */
+    font-feature-settings: 'ss01', 'ss03';
+    background-color: #0d1418;
+    color-scheme: dark;
   }
   ::-webkit-scrollbar {
     width: 10px;
     height: 10px;
   }
+  ::-webkit-scrollbar-track {
+    background: #0d1418;
+  }
   ::-webkit-scrollbar-thumb {
-    background: theme('colors.vita.border');
+    background: #2a3842;
     border-radius: 8px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: theme('colors.vita.muted');
+    background: #3d4d5a;
+  }
+  /* Seleção de texto em mint neon translúcido. */
+  ::selection {
+    background: rgb(95 200 180 / 0.22);
+    color: #e8eef2;
   }
 }
 
 @layer components {
-  /* Card padrão — sombra quente e suave, borda quase invisível. */
   .vita-card {
-    @apply bg-vita-surface border border-vita-border rounded-xl shadow-card;
+    @apply bg-vita-surface border border-vita-border rounded-2xl shadow-card;
   }
 
-  /* Headline editorial em serif — usar para títulos de seção,
-     nomes de paciente, frases de boas-vindas. Não usar em corpo. */
   .vita-display {
     @apply font-serif font-medium tracking-tight text-vita-text;
-    /* Source Serif 4 tem optical sizing — peça opsz pelo CSS. */
     font-optical-sizing: auto;
   }
 
+  /* Botão primário: mint neon com glow sutil. */
   .vita-btn-primary {
     @apply inline-flex items-center justify-center gap-2
-           px-4 py-2 rounded-lg text-sm font-medium
-           bg-vita-primary text-white
+           px-4 py-2.5 rounded-xl text-sm font-medium
+           bg-vita-primary text-vita-bg
            hover:bg-vita-primary-strong
-           focus:outline-none focus:ring-2 focus:ring-vita-primary/30
+           focus:outline-none focus:ring-2 focus:ring-vita-primary/40
            disabled:opacity-50 disabled:pointer-events-none
+           shadow-glow
            transition;
   }
   .vita-btn-secondary {
     @apply inline-flex items-center justify-center gap-2
-           px-4 py-2 rounded-lg text-sm font-medium
-           bg-white text-vita-text border border-vita-border
-           hover:bg-vita-bg
-           focus:outline-none focus:ring-2 focus:ring-vita-primary/20
+           px-4 py-2.5 rounded-xl text-sm font-medium
+           bg-vita-surface text-vita-text border border-vita-border-strong
+           hover:bg-vita-surface-elev hover:border-vita-primary/40
+           focus:outline-none focus:ring-2 focus:ring-vita-primary/25
            disabled:opacity-50 disabled:pointer-events-none
            transition;
   }
   .vita-btn-ghost {
     @apply inline-flex items-center justify-center gap-2
            px-3 py-2 rounded-lg text-sm font-medium
-           text-vita-muted hover:text-vita-text hover:bg-vita-bg
+           text-vita-muted hover:text-vita-text hover:bg-vita-surface-elev
            transition;
   }
   .vita-input {
-    @apply w-full rounded-lg border border-vita-border bg-white
-           px-3 py-2 text-sm text-vita-text
-           placeholder:text-vita-muted
-           focus:outline-none focus:ring-2 focus:ring-vita-primary/30 focus:border-vita-primary
+    @apply w-full rounded-xl border border-vita-border-strong bg-vita-surface
+           px-3.5 py-2.5 text-[15px] text-vita-text
+           placeholder:text-vita-muted/60
+           focus:outline-none focus:ring-2 focus:ring-vita-primary/35 focus:border-vita-primary/60
            transition;
   }
   .vita-label {
-    @apply block text-xs font-medium text-vita-muted uppercase tracking-wide mb-1.5;
+    @apply block text-[13px] font-medium text-vita-text/85 mb-1.5;
   }
   .vita-section-title {
-    @apply text-sm font-semibold text-vita-muted uppercase tracking-wider;
+    @apply text-base font-medium text-vita-text;
+  }
+
+  /* Pulse dot — usa currentColor (text-vita-ok, text-vita-crit, etc). */
+  .vita-pulse-dot {
+    @apply relative inline-flex h-2 w-2;
+  }
+  .vita-pulse-dot::before {
+    content: '';
+    @apply absolute inline-flex h-full w-full rounded-full
+           bg-current opacity-60 animate-ping;
+  }
+  .vita-pulse-dot::after {
+    content: '';
+    @apply relative inline-flex h-2 w-2 rounded-full bg-current;
+    box-shadow: 0 0 8px 0 currentColor;
   }
 }
 
 @layer utilities {
-  /* Textura de fundo: linhas de waveform/ECG sutis em SVG inline.
-     Opacity ~3% — dá "ambient" de monitor clínico sem poluir.
-     Aplicar em containers grandes (login, main do layout). */
-  .vita-ecg-bg {
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='80' viewBox='0 0 240 80'><path d='M 0 40 L 40 40 L 52 24 L 64 56 L 76 8 L 88 72 L 100 40 L 240 40' stroke='%233d6b66' stroke-width='0.9' fill='none' stroke-linecap='round' stroke-linejoin='round' opacity='0.06'/></svg>");
-    background-repeat: repeat;
-    background-position: center;
+  /* Canvas dark — usado no body e em areas sem card. */
+  .vita-bg-warm {
+    background-color: #0d1418;
+  }
+  .vita-bg-canvas {
+    background-color: #0d1418;
+  }
+
+  /* Gradiente clínico vertical — sálvia profundo → azul-petróleo.
+     Mantido para o painel esquerdo do Login (que continua hero dark). */
+  .vita-gradient-clinical {
+    background-color: #0a1014;
+    background-image:
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='960' height='220' viewBox='0 0 960 220'><path d='M 0 110 L 240 110 L 290 110 L 330 70 L 380 150 L 430 30 L 480 190 L 530 110 L 960 110' stroke='%235fc8b4' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round' opacity='0.22'/></svg>"),
+      linear-gradient(165deg, #0d1f24 0%, #112937 45%, #0a1820 100%);
+    background-repeat: no-repeat, no-repeat;
+    background-position: bottom center, center;
+    background-size: 960px 220px, cover;
+  }
+
+  /* ECG ao vivo — fita horizontal animada, scrolling continuo. Pode ser
+     ancorada no rodapé do main para dar sensação de monitor ativo. */
+  @keyframes vita-ecg-scroll {
+    from { background-position: 0 center; }
+    to   { background-position: -1200px center; }
+  }
+  .vita-ecg-live {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='90' viewBox='0 0 1200 90'><path d='M 0 45 L 200 45 L 240 45 L 260 25 L 280 65 L 300 8 L 320 78 L 340 45 L 600 45 L 640 45 L 660 25 L 680 65 L 700 8 L 720 78 L 740 45 L 1200 45' stroke='%235fc8b4' stroke-width='1.4' fill='none' stroke-linecap='round' stroke-linejoin='round' opacity='0.28'/></svg>");
+    background-repeat: repeat-x;
+    background-position: 0 center;
+    background-size: 1200px 90px;
+    animation: vita-ecg-scroll 14s linear infinite;
+  }
+
+  /* Glow sutil ao redor de elementos críticos. */
+  .vita-glow-primary {
+    box-shadow:
+      0 0 0 1px rgb(95 200 180 / 0.25),
+      0 0 24px -4px rgb(95 200 180 / 0.35);
+  }
+
+  /* Tabular num + featured num — para BPM/SpO₂/Temp grandes. */
+  .vita-num {
+    font-feature-settings: 'tnum' 1, 'lnum' 1, 'zero' 1;
+    font-variant-numeric: tabular-nums;
   }
 }

@@ -12,10 +12,10 @@ export function Logo({ size = 32, showWordmark = true }: LogoProps) {
   return (
     <div className="flex items-center gap-2.5">
       <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden>
-        <rect width="32" height="32" rx="9" fill="#e3ece9" />
+        <rect width="32" height="32" rx="9" fill="#173933" />
         <path
           d="M6 17h4l2-5 4 10 2-5h8"
-          stroke="#3d6b66"
+          stroke="#5fc8b4"
           strokeWidth="2.4"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -24,11 +24,11 @@ export function Logo({ size = 32, showWordmark = true }: LogoProps) {
       </svg>
       {showWordmark && (
         <div className="leading-tight">
-          <div className="font-serif text-[17px] font-medium tracking-tight text-vita-text">
+          <div className="font-serif text-[18px] font-medium tracking-tight text-vita-text">
             VitaCare
           </div>
-          <div className="text-[9px] font-mono uppercase tracking-[0.22em] text-vita-muted">
-            IoT
+          <div className="text-[10px] font-medium tracking-[0.18em] text-vita-muted uppercase">
+            iot health
           </div>
         </div>
       )}

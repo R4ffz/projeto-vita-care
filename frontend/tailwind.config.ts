@@ -5,51 +5,57 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Tokens semânticos do VitaCare IoT — paleta "Soft Clinical".
-        // Use sempre o token (text-vita-text, bg-vita-surface), nunca os hex.
-        // Sálvia + azul-petróleo + bege-pedra: identidade clínica, quente,
-        // distante do padrão "SaaS tech" de slate/teal vibrante.
+        // Tokens semânticos do VitaCare IoT — paleta "Dark Clinical".
+        // Estética de monitor de leito noturno / war-room clínico.
+        // Mantém os mesmos tokens (vita-text, vita-bg, vita-primary, etc.)
+        // para preservar compatibilidade com o resto do app.
         vita: {
-          bg:           '#f5f3ee',  // bege-pedra muito claro — fundo do app
-          surface:      '#ffffff',  // cards / superfícies
-          border:       '#e7e3da',  // borda quente, quase imperceptível
-          muted:        '#5a6573',  // cinza azulado — texto secundário
-          text:         '#1c2530',  // slate profundo com toque azulado
-          primary:      '#3d6b66',  // sálvia profundo — marca, ações principais
-          'primary-strong': '#2f5550', // sálvia mais profundo — hover/active
-          'primary-soft':   '#e3ece9', // sálvia translúcido — pílulas, fundos
-          accent:       '#2c5b7a',  // azul-petróleo — links, headlines secundárias
-          'accent-soft':'#e6edf4',  // azul-petróleo translúcido
+          bg:               '#0d1418',  // grafite profundo — canvas do app
+          surface:          '#131c22',  // grafite — cards e superfícies
+          'surface-elev':   '#1a242b',  // grafite elevado — cards over cards
+          border:           '#1f2b33',  // borda escura quase invisível
+          'border-strong':  '#2a3842',  // borda visível em divisores
+          muted:            '#7d8a96',  // cinza azulado claro — secundário
+          text:             '#e8eef2',  // off-white quente — primário
+          primary:          '#5fc8b4',  // mint/sálvia neon — marca, destaque
+          'primary-strong': '#4eb19e',  // mint neon mais profundo — hover/active
+          'primary-soft':   '#173933',  // mint translúcido escuro — chips/pílulas
+          accent:           '#3a8db5',  // petróleo claro — links, headlines secundárias
+          'accent-soft':    '#15324a',  // petróleo escuro translúcido
 
-          // Sidebar CLARA (off-white quente) — quebra o padrão dark slate de SaaS.
-          sidebar:         '#f9f7f2', // off-white quente
-          'sidebar-fg':    '#3d4451', // texto principal da sidebar (carvão suave)
-          'sidebar-muted': '#8a9099', // labels de seção
-          'sidebar-hover': '#ffffff', // hover sutil (vai contrastar com bege)
-          'sidebar-active':'#3d6b66', // sálvia (mesma da primary)
+          // Sidebar — ainda mais escura que o canvas pra criar profundidade.
+          sidebar:          '#0a1014',  // grafite quase preto
+          'sidebar-fg':     '#c4d1da',  // texto principal
+          'sidebar-muted':  '#6e7c87',  // labels/secundários
+          'sidebar-hover':  '#131c22',  // hover sutil
+          'sidebar-active': '#5fc8b4',  // mint neon (mesmo da primary)
 
-          // Status clínicos — tons mais naturais e menos saturados.
-          ok:           '#5fa777',  // verde-sálvia (estável)
-          'ok-soft':    '#e4f0e7',  // verde-sálvia translúcido
-          warn:         '#c47f3a',  // âmbar terroso (atenção)
-          'warn-soft':  '#f6ebd9',  // âmbar terroso translúcido
-          crit:         '#c14d52',  // vermelho-terracota (crítico)
-          'crit-soft':  '#f6dcde',  // vermelho-terracota translúcido
+          // Status clínicos em tons neon para legibilidade em fundo escuro.
+          ok:               '#5fc8b4',  // mint neon (estável)
+          'ok-soft':        '#173933',  // mint translúcido escuro
+          warn:             '#e0a05a',  // âmbar quente (atenção)
+          'warn-soft':      '#3a2b14',  // âmbar translúcido escuro
+          crit:             '#e85f6a',  // coral neon (crítico)
+          'crit-soft':      '#3a141a',  // coral translúcido escuro
         },
       },
       fontFamily: {
-        // Headlines de seção, nomes de paciente, alertas → serif editorial.
-        // Cria diferenciação imediata com o padrão sans-only de SaaS.
-        serif: ['"Source Serif 4"', '"Source Serif Pro"', 'Georgia', 'serif'],
-        // UI, corpo, botões, labels → continua Inter (legibilidade).
-        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        // Valores numéricos (BPM/SpO2/Temp) e metadata técnica.
-        mono: ['"JetBrains Mono"', 'ui-monospace', 'Menlo', 'monospace'],
+        // Serif editorial: Newsreader — usada só em saudações e headlines.
+        serif: ['Newsreader', '"Source Serif 4"', 'Georgia', 'serif'],
+        // UI sans: Atkinson Hyperlegible — desenhada pelo Braille Institute
+        // para máxima legibilidade e diferenciação de cada caractere.
+        // Ideal para o público-alvo (idosos, cuidadores em plantão).
+        sans: ['"Atkinson Hyperlegible"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        // Mono: IBM Plex Mono — referência em UIs clínicas/EHR; diferenciação
+        // máxima de glifos (1/l/I, 0/O) crítica para leitura de sinais vitais.
+        mono: ['"IBM Plex Mono"', 'ui-monospace', 'Menlo', 'monospace'],
       },
       boxShadow: {
-        // Sombras mais quentes e suaves que slate puro.
-        card: '0 1px 2px 0 rgb(28 37 48 / 0.04), 0 1px 3px 0 rgb(28 37 48 / 0.05)',
-        soft: '0 4px 16px -4px rgb(28 37 48 / 0.08), 0 2px 6px -2px rgb(28 37 48 / 0.05)',
+        // Sombras adaptadas para fundo escuro — depth via blur, não via cor.
+        card: '0 1px 2px 0 rgb(0 0 0 / 0.20), 0 1px 3px 0 rgb(0 0 0 / 0.25)',
+        soft: '0 8px 24px -6px rgb(0 0 0 / 0.35), 0 2px 8px -2px rgb(0 0 0 / 0.25)',
+        // Glow neon sálvia — para CTAs e elementos vivos.
+        glow: '0 0 0 1px rgb(95 200 180 / 0.20), 0 0 20px -4px rgb(95 200 180 / 0.30)',
       },
     },
   },

@@ -25,16 +25,49 @@ export function AppRoutes() {
           </ProtectedRoute>
         }
       >
-        <Route path="/" element={<Navigate to="/central" replace />} />
+        <Route path="/"                   element={<Navigate to="/central" replace />} />
+
+        {/* Acessíveis a qualquer perfil autenticado */}
         <Route path="/central"            element={<Central />} />
         <Route path="/pacientes"          element={<Pacientes />} />
-        <Route path="/pacientes/novo"     element={<CadastroPaciente />} />
         <Route path="/pacientes/:id"      element={<DashboardPaciente />} />
-        <Route path="/pacientes/:id/editar" element={<EdicaoPaciente />} />
         <Route path="/historico"          element={<HistoricoGrafico />} />
         <Route path="/alertas"            element={<ListaAlertas />} />
-        <Route path="/limites"            element={<ConfiguracaoLimites />} />
-        <Route path="/simulador"          element={<PainelSimulador />} />
+
+        {/* Restritas: admin + profissional */}
+        <Route
+          path="/pacientes/novo"
+          element={
+            <ProtectedRoute exigeAcao="paciente.criar">
+              <CadastroPaciente />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/pacientes/:id/editar"
+          element={
+            <ProtectedRoute exigeAcao="paciente.editar">
+              <EdicaoPaciente />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/limites"
+          element={
+            <ProtectedRoute exigeAcao="limites.configurar">
+              <ConfiguracaoLimites />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/simulador"
+          element={
+            <ProtectedRoute exigeAcao="simulador.operar">
+              <PainelSimulador />
+            </ProtectedRoute>
+          }
+        />
+
         <Route path="*"                   element={<NotFound />} />
       </Route>
     </Routes>
