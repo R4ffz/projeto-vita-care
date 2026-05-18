@@ -41,7 +41,9 @@ export function Layout() {
           subtitulo={subtitulo}
           onAbrirMenu={() => setMenuAberto(true)}
         />
-        <main className="flex-1 overflow-y-auto">
+        {/* Textura ECG sutilíssima — dá "ambient" de monitor clínico
+            sem competir com o conteúdo. */}
+        <main className="flex-1 overflow-y-auto vita-ecg-bg">
           <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-5 sm:py-6">
             <Outlet />
           </div>

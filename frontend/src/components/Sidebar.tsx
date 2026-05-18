@@ -3,7 +3,10 @@ import {
   Activity, Users, UserPlus, LineChart, BellRing, SlidersHorizontal, Cpu, X,
 } from 'lucide-react';
 import type { ComponentType } from 'react';
+import { useAuth } from '@/auth/AuthContext';
+import type { Perfil } from '@/types';
 import { Logo } from './Logo';
+import { Avatar } from './Avatar';
 
 interface ItemNav {
   to: string;
@@ -27,21 +30,27 @@ const NAV_SISTEMA: ItemNav[] = [
   { to: '/simulador', label: 'Painel do simulador', icon: Cpu },
 ];
 
+const ROTULO_PERFIL: Record<Perfil, string> = {
+  CUIDADOR:     'Cuidador',
+  PROFISSIONAL: 'Profissional',
+  ADMIN:        'Administrador',
+};
+
 interface Props {
-  /** Em mobile: controlada pelo Layout; em ≥lg sempre visível. */
   aberta: boolean;
   fechar: () => void;
 }
 
 export function Sidebar({ aberta, fechar }: Props) {
+  const { usuario } = useAuth();
+
   return (
     <>
-      {/* Backdrop (somente em mobile, quando aberta) */}
       <div
         onClick={fechar}
         aria-hidden
         className={[
-          'fixed inset-0 z-30 bg-slate-900/50 backdrop-blur-sm lg:hidden transition-opacity',
+          'fixed inset-0 z-30 bg-vita-text/40 backdrop-blur-sm lg:hidden transition-opacity',
           aberta ? 'opacity-100' : 'opacity-0 pointer-events-none',
         ].join(' ')}
       />
@@ -51,24 +60,41 @@ export function Sidebar({ aberta, fechar }: Props) {
           'fixed lg:static inset-y-0 left-0 z-40',
           'h-full w-64 shrink-0',
           'bg-vita-sidebar text-vita-sidebar-fg',
-          'flex flex-col border-r border-black/10',
+          'flex flex-col border-r border-vita-border',
           'transition-transform duration-200 ease-out',
           aberta ? 'translate-x-0' : '-translate-x-full',
           'lg:translate-x-0',
         ].join(' ')}
         aria-label="Navegação principal"
       >
-        <div className="px-5 py-5 border-b border-white/5 flex items-center justify-between">
-          <Logo variant="sidebar" />
+        <div className="px-5 py-5 border-b border-vita-border flex items-center justify-between">
+          <Logo />
           <button
             onClick={fechar}
-            className="lg:hidden text-vita-sidebar-fg hover:text-white p-1.5 -mr-1.5
-                       rounded-md hover:bg-vita-sidebar-hover transition"
+            className="lg:hidden text-vita-muted hover:text-vita-text p-1.5 -mr-1.5
+                       rounded-md hover:bg-white transition"
             aria-label="Fechar menu"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
+
+        {/* Cartão do usuário logado — humaniza a sidebar */}
+        {usuario && (
+          <div className="px-4 py-4 border-b border-vita-border">
+            <div className="flex items-center gap-3">
+              <Avatar nome={usuario.nome} size="md" tone="sage" />
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-medium text-vita-text truncate">
+                  {usuario.nome}
+                </div>
+                <div className="text-[11px] text-vita-muted truncate">
+                  {ROTULO_PERFIL[usuario.perfil]}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <nav className="flex-1 overflow-y-auto px-3 py-5 space-y-6">
           <Grupo titulo="Monitoramento" itens={NAV_PRINCIPAL} onNavegar={fechar} />
@@ -76,12 +102,14 @@ export function Sidebar({ aberta, fechar }: Props) {
           <Grupo titulo="Sistema"       itens={NAV_SISTEMA}   onNavegar={fechar} />
         </nav>
 
-        <div className="px-5 py-4 border-t border-white/5">
-          <div className="text-[10px] font-mono uppercase tracking-[0.18em] text-vita-sidebar-muted">
-            Protótipo acadêmico
-          </div>
-          <div className="text-[11px] text-vita-sidebar-muted mt-0.5">
-            PUC Goiás · Internet das Coisas
+        {/* Rodapé neutro — sem refs acadêmicas. */}
+        <div className="px-5 py-4 border-t border-vita-border">
+          <div className="flex items-center gap-2 text-[11px] text-vita-muted">
+            <span className="relative inline-flex h-1.5 w-1.5">
+              <span className="absolute inline-flex h-full w-full rounded-full bg-vita-ok opacity-60 animate-ping" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-vita-ok" />
+            </span>
+            <span>Telemetria ativa</span>
           </div>
         </div>
       </aside>
@@ -107,15 +135,24 @@ function Grupo({
               onClick={onNavegar}
               className={({ isActive }) =>
                 [
-                  'flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition',
+                  'flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition relative',
                   isActive
-                    ? 'bg-vita-sidebar-active/15 text-white border-l-2 border-vita-sidebar-active -ml-0.5 pl-[10px]'
-                    : 'text-vita-sidebar-fg hover:bg-vita-sidebar-hover hover:text-white',
+                    ? 'bg-vita-primary-soft text-vita-primary-strong font-medium'
+                    : 'text-vita-sidebar-fg hover:bg-white hover:text-vita-text',
                 ].join(' ')
               }
             >
-              <it.icon className="h-4 w-4 shrink-0" />
-              <span>{it.label}</span>
+              {({ isActive }) => (
+                <>
+                  {isActive && (
+                    <span aria-hidden
+                          className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-r-full
+                                     bg-vita-primary" />
+                  )}
+                  <it.icon className="h-4 w-4 shrink-0" />
+                  <span>{it.label}</span>
+                </>
+              )}
             </NavLink>
           </li>
         ))}

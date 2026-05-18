@@ -40,7 +40,7 @@ export function EmergencyModal({ alerta, paciente, onFechar, onAtender, atendend
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md bg-white rounded-xl shadow-2xl
+        className="w-full max-w-md bg-vita-surface rounded-xl shadow-2xl
                    border-t-4 border-vita-crit overflow-hidden
                    animate-[emergencyIn_0.28s_cubic-bezier(0.34,1.56,0.64,1)]"
       >
@@ -64,7 +64,7 @@ export function EmergencyModal({ alerta, paciente, onFechar, onAtender, atendend
             </div>
           </div>
           <div className="flex-1 min-w-0">
-            <h2 id="emergency-title" className="text-xl font-semibold text-vita-text">
+            <h2 id="emergency-title" className="vita-display text-2xl">
               Queda detectada
             </h2>
             <p className="mt-1 text-sm text-vita-muted">
@@ -100,7 +100,7 @@ export function EmergencyModal({ alerta, paciente, onFechar, onAtender, atendend
             disabled={atendendo}
             className="inline-flex items-center justify-center gap-2
                        px-4 py-2 rounded-lg text-sm font-medium
-                       bg-vita-crit text-white hover:bg-rose-700
+                       bg-vita-crit text-white hover:brightness-95
                        disabled:opacity-60 disabled:pointer-events-none transition"
           >
             <Check className="h-4 w-4" />

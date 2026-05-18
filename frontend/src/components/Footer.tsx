@@ -7,7 +7,7 @@ export function Footer() {
                        justify-between gap-2">
       <SimuladorBadge variant="full" />
       <div className="text-[11px] text-vita-muted font-mono tracking-wide">
-        VitaCare IoT · v0.1 · Protótipo acadêmico
+        VitaCare IoT
       </div>
     </footer>
   );
