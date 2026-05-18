@@ -152,22 +152,21 @@ docker compose down -v           # para tudo e apaga os dados persistidos do Pos
 
 ---
 
-## Subir a stack completa via Docker (backend + frontend)
+## Subir a stack completa via Docker
 
-A partir desta fase, o `docker-compose.yml` também sobe **backend Spring Boot** e
-**frontend React** dockerizados. O simulador Node.js continua rodando **fora** do
-compose (execute `cd simulator && npm start` em outro terminal).
+O `docker-compose.yml` sobe a stack inteira: **PostgreSQL**, **Mosquitto**,
+**backend Spring Boot**, **frontend React (Nginx)** e o **simulador IoT Node.js** —
+tudo isolado na rede `vitacare`. Não precisa instalar Java, Node ou Maven no host.
 
 ### Pré-requisitos
 
 - Docker Desktop (Windows / macOS) ou Docker Engine + Compose v2.20+ (Linux).
-- Node.js 20+ apenas se for rodar o simulador local.
 
 ### Subir tudo do zero
 
 ```bash
-docker compose up --build -d     # builda imagens e sobe os 4 serviços
-docker compose ps                # backend e frontend devem aparecer 'healthy'
+docker compose up --build -d     # builda imagens e sobe os 5 serviços
+docker compose ps                # backend, frontend, simulator devem aparecer 'healthy'
 docker compose logs -f backend   # acompanhar logs do Spring
 ```
 
@@ -193,7 +192,7 @@ docker compose build --no-cache  # força rebuild sem cache
 | WebSocket   | ws://localhost:3000/ws (via proxy) ou ws://localhost:8080/ws | STOMP nativo |
 | PostgreSQL  | localhost:5432, db `vitacare`        | user `vitacare` / pwd `vitacare_dev` |
 | Mosquitto   | localhost:1883                       | anônimo (dev) |
-| Simulator (host) | http://localhost:4000/sim       | rodar `cd simulator && npm start` |
+| Simulator   | http://localhost:4000/sim            | controle HTTP (POST `/sim/{id}/{queda,taquicardia,…}`) |
 
 > **Swagger não está habilitado** neste protótipo. Endpoints REST estão
 > documentados no README do backend.
@@ -220,19 +219,37 @@ o secret do JWT. Defaults adequados para dev já vêm setados.
                                                    ▼
                                               vitacare-backend (Spring Boot)
                                                    │
-                              ┌────────────────────┼──────────────────────┐
-                              ▼                    ▼                      ▼
-                         postgres:5432        mosquitto:1883        (futuro)
-                       (vitacare-postgres) (vitacare-mosquitto)
-
-  navegador  ──── http://localhost:4000 ────▶  simulator (Node, no host)
-                                                   │
-                                                   │ MQTT publish
-                                                   ▼
-                                          localhost:1883 ──▶ vitacare-mosquitto
-                                          (port forwarding)
+                              ┌────────────────────┴──────────────────┐
+                              ▼                                       ▼
+                         postgres:5432                          mosquitto:1883
+                       (vitacare-postgres)                  (vitacare-mosquitto)
+                                                                   ▲
+                                                                   │ MQTT publish
+                                                                   │ (mqtt://mosquitto:1883)
+  navegador  ──── http://localhost:4000 ────▶  vitacare-simulator (Node.js)
+                                                  (controle HTTP /sim/*)
 ```
 
-Rede `vitacare` (bridge) liga os 4 containers. O simulador permanece no host
-para facilitar controle durante a demonstração (CLI no terminal).
+Os 5 containers compartilham a rede bridge `vitacare`. Dentro dela, a resolução
+é por nome de serviço (`postgres`, `mosquitto`, `backend`, `frontend`,
+`simulator`). O simulador publica MQTT em `mqtt://mosquitto:1883`; fora do
+Docker, o mesmo binário cai no fallback `mqtt://localhost:1883` e continua
+funcionando.
+
+### Controlar o simulador
+
+Direto pelo host (porta exposta):
+
+```bash
+curl http://localhost:4000/sim/status
+curl -X POST http://localhost:4000/sim/2/taquicardia
+curl -X POST http://localhost:4000/sim/3/queda \
+     -H 'Content-Type: application/json' -d '{"intensidade":3.2}'
+curl -X POST http://localhost:4000/sim/2/reset
+```
+
+O Painel do Simulador no frontend (`/simulador`) consome esses mesmos
+endpoints. O CLI por stdin (digitar `queda 1` no terminal) só funciona quando
+o simulador roda fora do Docker com `cd simulator && npm start` — dentro do
+container, `stdin` não é TTY e o CLI é desativado automaticamente.
 

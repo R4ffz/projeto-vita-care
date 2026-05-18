@@ -73,6 +73,27 @@ services:
     networks:
       - vitacare
 
+  simulator:
+    build:
+      context: ./simulator
+    image: vitacare-simulator:dev
+    container_name: vitacare-simulator
+    restart: unless-stopped
+    depends_on:
+      mosquitto:
+        condition: service_started
+    environment:
+      MQTT_URL:           mqtt://mosquitto:1883
+      MQTT_CLIENT_ID:     vitacare-simulator
+      PATIENT_IDS:        ${SIM_PATIENT_IDS:-1,2,3}
+      SINAIS_INTERVAL_MS: ${SIM_SINAIS_INTERVAL_MS:-5000}
+      STATUS_INTERVAL_MS: ${SIM_STATUS_INTERVAL_MS:-30000}
+      CONTROL_PORT:       "4000"
+    ports:
+      - "4000:4000"
+    networks:
+      - vitacare
+
 volumes:
   vitacare-postgres-data:
 

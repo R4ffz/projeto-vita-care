@@ -1,0 +1,21 @@
+node_modules/
+npm-debug.log*
+.npm/
+
+# Configurações locais — nunca entrar na imagem
+.env
+.env.local
+.env.*.local
+
+# Git / docs (não usados no build)
+.git/
+.gitignore
+README.md
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
