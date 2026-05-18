@@ -27,19 +27,20 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [estado, setEstado] = useState<PayloadPersistido | null>(null);
-  const navigate = useNavigate();
-
-  // Restaura sessão persistida na carga.
-  useEffect(() => {
+  // Inicializador síncrono: lê o localStorage ANTES do primeiro render para
+  // não haver janela em que `usuario` seja null com sessão válida persistida.
+  // Sem isso, ProtectedRoute redireciona para /login no F5 de rotas internas.
+  const [estado, setEstado] = useState<PayloadPersistido | null>(() => {
     const raw = localStorage.getItem(AUTH_STORAGE_KEY);
-    if (!raw) return;
+    if (!raw) return null;
     try {
-      setEstado(JSON.parse(raw) as PayloadPersistido);
+      return JSON.parse(raw) as PayloadPersistido;
     } catch {
       localStorage.removeItem(AUTH_STORAGE_KEY);
+      return null;
     }
-  }, []);
+  });
+  const navigate = useNavigate();
 
   const logout = useCallback(() => {
     localStorage.removeItem(AUTH_STORAGE_KEY);
