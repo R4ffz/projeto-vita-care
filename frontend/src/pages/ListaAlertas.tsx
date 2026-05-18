@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Check, ExternalLink, Filter } from 'lucide-react';
+import { AlertOctagon, Check, ExternalLink, Filter } from 'lucide-react';
 import { Card, CardBody, CardHeader, CardTitle } from '@/components/Card';
 import { SeveridadeBadge } from '@/components/SeveridadeBadge';
 import { LoadingState } from '@/components/LoadingState';
@@ -136,7 +136,10 @@ function Linha({
   const critico = alerta.severidade === 'CRITICA' && !alerta.atendido;
 
   return (
-    <tr className={critico ? 'bg-rose-50/60' : ''}>
+    <tr className={critico
+      ? 'bg-rose-50/70 border-l-4 border-l-vita-crit'
+      : 'border-l-4 border-l-transparent'
+    }>
       <td className="px-5 py-3">
         <Link to={`/pacientes/${alerta.pacienteId}`}
               className="text-vita-text hover:text-vita-primary inline-flex items-center gap-1.5">
@@ -144,7 +147,14 @@ function Linha({
           <ExternalLink className="h-3 w-3 text-vita-muted" />
         </Link>
       </td>
-      <td className="px-5 py-3 text-vita-text">{rotuloTipoAlerta(alerta.tipo)}</td>
+      <td className="px-5 py-3">
+        <span className="inline-flex items-center gap-1.5 text-vita-text">
+          {critico && (
+            <AlertOctagon className="h-4 w-4 text-vita-crit shrink-0" aria-label="Crítica" />
+          )}
+          {rotuloTipoAlerta(alerta.tipo)}
+        </span>
+      </td>
       <td className="px-5 py-3 font-mono tabular-nums text-vita-text">{alerta.valorMedido ?? '—'}</td>
       <td className="px-5 py-3"><SeveridadeBadge severidade={alerta.severidade} /></td>
       <td className="px-5 py-3 text-vita-muted">
