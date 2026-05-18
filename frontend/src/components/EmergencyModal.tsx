@@ -41,10 +41,21 @@ export function EmergencyModal({ alerta, paciente, onFechar, onAtender, atendend
       <div
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-md bg-white rounded-xl shadow-2xl
-                   border-t-4 border-vita-crit overflow-hidden"
+                   border-t-4 border-vita-crit overflow-hidden
+                   animate-[emergencyIn_0.28s_cubic-bezier(0.34,1.56,0.64,1)]"
       >
-        {/* Header com pulso vermelho */}
-        <div className="px-6 pt-6 pb-4 flex items-start gap-4">
+        {/* Faixa de urgência no topo */}
+        <div className="bg-vita-crit text-white px-6 py-2
+                        flex items-center gap-2 text-[11px] font-mono
+                        uppercase tracking-[0.25em]">
+          <span className="relative inline-flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full rounded-full bg-white opacity-70 animate-ping" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-white" />
+          </span>
+          Alerta crítico — atenção imediata
+        </div>
+
+        <div className="px-6 pt-5 pb-4 flex items-start gap-4">
           <div className="relative shrink-0">
             <span className="absolute inset-0 rounded-full bg-vita-crit opacity-30 animate-ping" />
             <div className="relative h-12 w-12 rounded-full bg-vita-crit/15
@@ -53,10 +64,7 @@ export function EmergencyModal({ alerta, paciente, onFechar, onAtender, atendend
             </div>
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-[11px] font-mono uppercase tracking-[0.2em] text-vita-crit">
-              Alerta crítico
-            </div>
-            <h2 id="emergency-title" className="mt-1 text-lg font-semibold text-vita-text">
+            <h2 id="emergency-title" className="text-xl font-semibold text-vita-text">
               Queda detectada
             </h2>
             <p className="mt-1 text-sm text-vita-muted">
@@ -103,6 +111,10 @@ export function EmergencyModal({ alerta, paciente, onFechar, onAtender, atendend
 
       <style>{`
         @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+        @keyframes emergencyIn {
+          0%   { opacity: 0; transform: translateY(8px) scale(0.96); }
+          100% { opacity: 1; transform: translateY(0)   scale(1); }
+        }
       `}</style>
     </div>
   );

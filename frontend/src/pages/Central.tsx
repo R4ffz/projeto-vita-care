@@ -27,6 +27,13 @@ const ORDEM_GRAVIDADE: Record<StatusPaciente, number> = {
   critico: 0, atencao: 1, ok: 2, offline: 3,
 };
 
+const BORDA_STATUS: Record<StatusPaciente, string> = {
+  critico: 'border-l-vita-crit',
+  atencao: 'border-l-vita-warn',
+  ok:      'border-l-vita-ok',
+  offline: 'border-l-vita-muted',
+};
+
 async function carregarCentral(): Promise<DadosCentral> {
   const [pacientes, alertas] = await Promise.all([
     pacientesService.listar(),
@@ -98,7 +105,8 @@ export function Central() {
           <Link
             key={paciente.id}
             to={`/pacientes/${paciente.id}`}
-            className="vita-card hover:border-vita-primary/40 hover:shadow-md transition group"
+            className={`vita-card border-l-4 ${BORDA_STATUS[status]}
+                        hover:shadow-md transition group`}
           >
             <div className="px-5 py-4 flex items-start justify-between border-b border-vita-border">
               <div className="min-w-0">

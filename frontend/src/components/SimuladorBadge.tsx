@@ -6,8 +6,10 @@ interface Props {
 }
 
 /**
- * Indicador profissional e discreto de que a fonte dos dados é um dispositivo
- * IoT virtual (simulador), em vez do badge "MODO SIMULAÇÃO" gritante.
+ * Indicador profissional e discreto da fonte de dados (dispositivo IoT virtual).
+ * Variantes:
+ *   - compact: pill enxuto no topbar com tooltip.
+ *   - full   : linha textual no rodapé / tela de login.
  */
 export function SimuladorBadge({ variant = 'compact' }: Props) {
   if (variant === 'full') {
