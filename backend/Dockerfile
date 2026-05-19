@@ -12,7 +12,7 @@ COPY .mvn .mvn
 COPY pom.xml .
 COPY src src
 
-RUN --mount=type=cache,target=/root/.m2 \
+RUN --mount=type=cache,id=m2,target=/root/.m2 \
     chmod +x mvnw && \
     ./mvnw -B -DskipTests package && \
     cp target/*.jar /workspace/app.jar
