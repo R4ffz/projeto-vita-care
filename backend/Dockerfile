@@ -1,7 +1,9 @@
 # syntax=docker/dockerfile:1.6
 # ──────────────────────────────────────────────────────────────────────────────
 # Estágio 1 — build do JAR com Maven Wrapper.
-# Usa BuildKit cache mount para o .m2, acelerando rebuilds.
+# Sem BuildKit cache mount: o builder do Railway exige prefixo de cacheKey
+# proprietário que quebra a portabilidade. Sem cache, o build leva ~1 min
+# a mais por causa do download das deps, mas roda em qualquer plataforma.
 # ──────────────────────────────────────────────────────────────────────────────
 FROM eclipse-temurin:17-jdk AS build
 
@@ -12,8 +14,7 @@ COPY .mvn .mvn
 COPY pom.xml .
 COPY src src
 
-RUN --mount=type=cache,id=m2,target=/root/.m2 \
-    chmod +x mvnw && \
+RUN chmod +x mvnw && \
     ./mvnw -B -DskipTests package && \
     cp target/*.jar /workspace/app.jar
 
