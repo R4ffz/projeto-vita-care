@@ -22,11 +22,21 @@ RUN npm run build
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Estágio 2 — Nginx servindo a SPA + reverse proxy para /api e /ws.
+# Usa o suporte de templates da imagem oficial do nginx:
+#   /etc/nginx/templates/*.conf.template  →  /etc/nginx/conf.d/*.conf
+# Variáveis filtradas (BACKEND_HOST, NGINX_PORT) são substituídas em runtime;
+# as nativas do nginx ($host, $remote_addr, ...) permanecem intactas.
 # ──────────────────────────────────────────────────────────────────────────────
 FROM nginx:1.27-alpine
 
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY nginx.conf.template /etc/nginx/templates/default.conf.template
 COPY --from=build /app/dist /usr/share/nginx/html
+
+# Defaults seguros para `docker-compose up` local (hostname da rede compose).
+# Em Railway, sobrescreva BACKEND_HOST=backend.railway.internal:8080.
+ENV BACKEND_HOST=backend:8080 \
+    NGINX_PORT=80 \
+    NGINX_ENVSUBST_FILTER_VARIABLES="BACKEND_HOST NGINX_PORT"
 
 EXPOSE 80
 

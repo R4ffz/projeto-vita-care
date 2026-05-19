@@ -2,9 +2,15 @@
 # Serve a SPA React (Vite build) e atua como reverse proxy do backend Spring
 # para que o navegador faça todas as chamadas no mesmo host (origem única,
 # sem necessidade de configuração CORS adicional).
+#
+# Este arquivo é processado pelo entrypoint da imagem oficial do nginx:
+# variáveis no formato ${VAR} são substituídas em tempo de execução com
+# base nas envs do container. Apenas BACKEND_HOST e NGINX_PORT são filtradas
+# (NGINX_ENVSUBST_FILTER_VARIABLES no Dockerfile) — variáveis nativas do
+# nginx (`$host`, `$remote_addr`, `$uri`...) permanecem intactas.
 
 server {
-    listen 80;
+    listen ${NGINX_PORT};
     server_name _;
 
     root /usr/share/nginx/html;
@@ -30,7 +36,7 @@ server {
 
     # Reverse proxy: API REST do backend Spring.
     location /api/ {
-        proxy_pass         http://backend:8080;
+        proxy_pass         http://${BACKEND_HOST};
         proxy_http_version 1.1;
         proxy_set_header   Host              $host;
         proxy_set_header   X-Real-IP         $remote_addr;
@@ -41,7 +47,7 @@ server {
 
     # Reverse proxy: WebSocket/STOMP (handshake exige upgrade de protocolo).
     location /ws {
-        proxy_pass         http://backend:8080;
+        proxy_pass         http://${BACKEND_HOST};
         proxy_http_version 1.1;
         proxy_set_header   Upgrade           $http_upgrade;
         proxy_set_header   Connection        "upgrade";

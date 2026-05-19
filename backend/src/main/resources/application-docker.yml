@@ -3,6 +3,11 @@
 # Cada propriedade pode ser sobrescrita por variável de ambiente — defaults
 # abaixo cobrem o caso "subiu o docker-compose.yml padrão".
 
+server:
+  # Em Railway/Heroku-like, a plataforma injeta a porta via $PORT.
+  # Local/compose continua usando 8080 como default.
+  port: ${PORT:8080}
+
 spring:
   datasource:
     url:      ${SPRING_DATASOURCE_URL:jdbc:postgresql://postgres:5432/vitacare}
