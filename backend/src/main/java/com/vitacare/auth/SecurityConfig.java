@@ -1,7 +1,9 @@
 package com.vitacare.auth;
 
+import java.util.Arrays;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -29,6 +31,15 @@ import lombok.RequiredArgsConstructor;
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
+
+    /**
+     * Lista de origens permitidas no CORS, separadas por vírgula. Configurável
+     * via VITACARE_SECURITY_CORS_ALLOWED_ORIGINS — em produção deve incluir o
+     * domínio público do frontend (Railway/Render/etc). Default cobre o dev
+     * local (Vite em 5173 e Nginx do compose em 3000).
+     */
+    @Value("${vitacare.security.cors.allowed-origins:http://localhost:5173,http://localhost:3000}")
+    private String allowedOriginsCsv;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -74,11 +85,15 @@ public class SecurityConfig {
      */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
+        List<String> origins = Arrays.stream(allowedOriginsCsv.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toList();
+
         CorsConfiguration cfg = new CorsConfiguration();
-        cfg.setAllowedOrigins(List.of(
-                "http://localhost:5173",
-                "http://localhost:3000"
-        ));
+        // setAllowedOriginPatterns aceita wildcards (ex.: https://*.up.railway.app)
+        // e funciona com allowCredentials=true; setAllowedOrigins não aceita.
+        cfg.setAllowedOriginPatterns(origins);
         cfg.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         cfg.setAllowedHeaders(List.of("*"));
         cfg.setExposedHeaders(List.of("Authorization"));
